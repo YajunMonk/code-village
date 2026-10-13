@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<!-- /SKELETON -->
+<title>代码村大冒险</title>
+<style>
+/* 单一视觉世界：深夜紫的游戏机外框，像素画面居中铺满 */
+:root { --bg: #0b0912; --ink: #f4e9cc; --gold: #ffd23f; color-scheme: dark; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); overflow: hidden; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; display: grid; place-items: center; }
+#game { display: block; image-rendering: pixelated; image-rendering: crisp-edges; outline: none; }
+#touch { position: fixed; inset: auto 0 0 0; height: 0; pointer-events: none; }
+#touch button { position: fixed; pointer-events: auto; touch-action: none; border: 3px solid rgba(244,233,204,.55); background: rgba(22,18,40,.42); color: rgba(244,233,204,.9); font: 700 18px/1 system-ui, sans-serif; display: grid; place-items: center; padding: 0; -webkit-user-select: none; user-select: none; }
+#touch button.on { background: rgba(255,210,63,.6); color: #1a1222; }
+#touch .d { width: 52px; height: 52px; border-radius: 10px; }
+#touch [data-k=up] { left: calc(16px + env(safe-area-inset-left) + 54px); bottom: calc(16px + env(safe-area-inset-bottom) + 108px); }
+#touch [data-k=down] { left: calc(16px + env(safe-area-inset-left) + 54px); bottom: calc(16px + env(safe-area-inset-bottom)); }
+#touch [data-k=left] { left: calc(16px + env(safe-area-inset-left)); bottom: calc(16px + env(safe-area-inset-bottom) + 54px); }
+#touch [data-k=right] { left: calc(16px + env(safe-area-inset-left) + 108px); bottom: calc(16px + env(safe-area-inset-bottom) + 54px); }
+#touch [data-k=ok] { right: calc(16px + env(safe-area-inset-right)); bottom: calc(16px + env(safe-area-inset-bottom) + 40px); width: 72px; height: 72px; border-radius: 50%; background: rgba(255,210,63,.75); color: #1a1222; border-color: rgba(26,18,34,.6); font-size: 24px; }
+#touch [data-k=run] { right: calc(16px + env(safe-area-inset-right) + 84px); bottom: calc(16px + env(safe-area-inset-bottom)); width: 56px; height: 56px; border-radius: 50%; font-size: 14px; }
+#tin { position: fixed; display: none; opacity: 0; font-size: 16px; border: 0; padding: 0; margin: 0; background: transparent; color: transparent; caret-color: transparent; z-index: 5; }
+@media (prefers-reduced-motion: reduce) { #touch button { transition: none; } }
+</style>
+</head>
+<body>
+<canvas id="game" width="480" height="270" tabindex="0" aria-label="代码村大冒险 游戏画面"></canvas>
+<div id="touch" hidden>
+  <button class="d" data-k="up" type="button" aria-label="上">▲</button>
+  <button class="d" data-k="left" type="button" aria-label="左">◀</button>
+  <button class="d" data-k="right" type="button" aria-label="右">▶</button>
+  <button class="d" data-k="down" type="button" aria-label="下">▼</button>
+  <button data-k="run" type="button" aria-label="跑">跑</button>
+  <button data-k="ok" type="button" aria-label="确定">A</button>
+</div>
+<input id="tin" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="终端输入">
+<script>
+/*BUNDLE*/
+</script>
+</body>
+</html>
