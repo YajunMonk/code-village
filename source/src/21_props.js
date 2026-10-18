@@ -2,7 +2,7 @@
  * 21 美术：树、房屋、道具、图标
  * ============================================================ */
 const LEAF = {
-  oak: ['#1d4a3a', '#2c6b44', '#43914e', '#6cb85a', '#a4dc76'],
+  oak: ['#263f39', '#3d5e4c', '#5c7c57', '#819b6b', '#b1bf87'],
   blossom: ['#8a3a62', '#c25a88', '#e888ac', '#ffbcd4', '#fff0f6'],
   autumn: ['#7a2e1e', '#b04a22', '#e07a2a', '#f4a83a', '#ffd870'],
   night: ['#1e1838', '#2e2654', '#463a7a', '#5e52a0', '#8a7ac8'],
@@ -38,7 +38,7 @@ function makeTree(kind = 'oak', seed = 1) {
   });
 }
 function makePine(seed = 1, night = false) {
-  const L = night ? LEAF.night : ['#173d36', '#22584a', '#327a58', '#4e9a64', '#7cc07a'];
+  const L = night ? LEAF.night : ['#253e39', '#375749', '#4f7458', '#70906a', '#a0b688'];
   return spr(26, 46, A => {
     const { R, P } = A;
     R(11, 36, 4, 10, BARK[1]); R(11, 36, 1, 10, BARK[2]);
@@ -81,77 +81,152 @@ function makeRock(seed = 1, dark = false) {
 
 /* ---------- 房屋 ---------- */
 function makeHouse(o) {
-  const w = o.w || 96, wallH = o.wallH || 40, roofH = o.roofH || 40, W = w + 10, H = roofH + wallH + 2;
-  const out = { lights: [], door: null, chimney: null };
-  const rf = o.roof, wx0 = 5, wy0 = roofH - 4, wy1 = H - 1;
+  const w = o.w || 96, wallH = Math.max(52, o.wallH || 52), roofH = Math.max(44, o.roofH || 44);
+  const W = w + 10, H = roofH + wallH + 2, wx0 = 5, wy0 = roofH - 4, wy1 = H - 1;
+  const rf = o.roof, arch = o.arch || 'cottage', timber = ['#483b32', '#796047', '#b68c60'];
+  const out = { lights: [], door: null, chimney: null, arch };
   out.canvas = spr(W, H, A => {
-    const { R, P } = A;
-    // 墙
-    if (o.wall === 'plaster' || o.wall === 'white') {
-      const pc = o.wall === 'white' ? ['#c8ccd8', '#eef0f6', '#ffffff'] : ['#d8c8a4', '#f2e4c2', '#fff4dc'];
-      R(wx0, wy0, w, wy1 - wy0, pc[1]);
-      for (let y = wy0; y < wy1; y++) for (let x = wx0; x < wx0 + w; x++) if (hash2(x, y, 4) > .93) P(x, y, pc[0]);
-      if (o.wall === 'plaster') { R(wx0, wy0 + 4, w, 2, BARK[1]); [0, w / 2 - 1, w - 2].forEach(x => R(wx0 + x, wy0, 2, wy1 - wy0, BARK[1])); for (let i = 0; i < w - 2; i += 2) P(wx0 + 1 + i, wy0 + 6, BARK[0]); }
-    } else if (o.wall === 'stone') {
-      R(wx0, wy0, w, wy1 - wy0, '#7a7f98');
-      for (let y = wy0, row = 0; y < wy1; y += 6, row++) for (let x = wx0 - (row % 2) * 6; x < wx0 + w; x += 12) {
-        const c = ['#868ca6', '#9399b2', '#7f849e'][(hash2(x, y, 3) * 3) | 0];
-        R(Math.max(wx0, x + 1), y + 1, Math.min(10, wx0 + w - x - 1), 4, c); R(Math.max(wx0, x + 1), y + 1, Math.min(10, wx0 + w - x - 1), 1, '#aab0c8');
+    const { R, P, L, E } = A;
+    // 石基、抹灰和木墙使用成片材质；只在接缝和受光边缘放细节。
+    if (o.wall === 'stone') {
+      const st = arch === 'library' ? ['#6b7281', '#a1a5ac', '#c7c4b8'] : ['#626c72', '#8d9697', '#b9bdb2'];
+      R(wx0, wy0, w, wy1 - wy0, st[0]);
+      for (let y = wy0, row = 0; y < wy1; y += 7, row++) for (let x = wx0 - (row % 2) * 6; x < wx0 + w; x += 12) {
+        const x1 = Math.max(wx0, x + 1), ww = Math.min(10, wx0 + w - x1), c = mix(st[1], st[2], hash2(x, y, 3) * .24);
+        if (ww <= 0) continue; R(x1, y + 1, ww, 5, c); R(x1, y + 1, ww, 1, st[2]); P(x1 + 1, y + 5, st[0]);
+      }
+    } else if (o.wall === 'plaster' || o.wall === 'white') {
+      const plaster = o.wall === 'white' ? ['#a8b7b6', '#d5ded4', '#eef0df'] : ['#b7a086', '#dfcfac', '#f1e3bf'];
+      R(wx0, wy0, w, wy1 - wy0, plaster[1]); R(wx0, wy0, 3, wy1 - wy0, plaster[2]); R(wx0 + w - 5, wy0, 5, wy1 - wy0, plaster[0]);
+      for (let i = 0; i < 26; i++) { const x = wx0 + 5 + Math.floor(hash2(i, w, 2) * (w - 10)), y = wy0 + 10 + Math.floor(hash2(i, w, 8) * (wallH - 12)); R(x, y, 2 + i % 3, 1, mix(plaster[1], plaster[0], .5)); }
+      if (o.wall === 'plaster') {
+        [wx0 + 1, wx0 + w - 4].forEach(x => { R(x, wy0, 3, wy1 - wy0, timber[0]); P(x + 1, wy0 + 5, timber[2]); });
+        R(wx0, wy0 + 6, w, 3, timber[1]); R(wx0, wy1 - 12, w, 2, timber[1]);
+        L(wx0 + 3, wy0 + 9, wx0 + 16, wy0 + 22, timber[1]); L(wx0 + w - 4, wy0 + 9, wx0 + w - 17, wy0 + 22, timber[1]);
       }
     } else {
-      const wc = o.wood || ['#5a3a26', '#8a5a3a', '#a8744c'];
-      R(wx0, wy0, w, wy1 - wy0, wc[1]);
-      for (let x = wx0; x < wx0 + w; x += 6) { R(x, wy0, 1, wy1 - wy0, wc[0]); const k = hash2(x, 1, 7); if (k > .6) R(x + 1, wy0, 5, wy1 - wy0, mix(wc[1], wc[2], .5)); }
-      for (let y = wy0 + 3; y < wy1; y += 7) for (let x = wx0 + 2; x < wx0 + w; x += 6) if (hash2(x, y, 2) > .7) P(x + 2, y, wc[0]);
+      const wood = o.wood || ['#594333', '#8d6a47', '#b48e61'];
+      R(wx0, wy0, w, wy1 - wy0, wood[1]);
+      for (let y = wy0 + 4; y < wy1; y += 6) { R(wx0, y, w, 1, wood[0]); R(wx0, y + 1, w, 1, wood[2]); for (let x = wx0 + 8 + y % 7; x < wx0 + w - 3; x += 19) { R(x, y + 3, 5, 1, mix(wood[0], wood[1], .5)); P(x + 2, y + 2, wood[0]); } }
+      R(wx0, wy0, 3, wy1 - wy0, wood[0]); R(wx0 + w - 3, wy0, 3, wy1 - wy0, wood[0]);
     }
-    // 屋檐阴影
-    for (let x = wx0; x < wx0 + w; x++) { A.T(x, wy0 + 4, shade(A.G(x, wy0 + 4) || '#000000', .7)); A.T(x, wy0 + 5, shade(A.G(x, wy0 + 5) || '#000000', .82)); }
-    // 地基
-    R(wx0 - 1, wy1 - 4, w + 2, 4, '#6a6e84'); R(wx0 - 1, wy1 - 4, w + 2, 1, '#9aa0b8');
-    for (let x = wx0; x < wx0 + w; x += 7) P(x, wy1 - 2, '#4e5266');
-    // 窗
-    (o.windows || []).forEach(wx => {
-      const x = wx0 + wx, y = wy0 + 10;
-      R(x - 1, y - 1, 16, 14, BARK[0]); R(x, y, 14, 12, '#2a4060');
-      for (let yy = 0; yy < 12; yy++) for (let xx = 0; xx < 14; xx++) if (xx - yy > 2 && xx - yy < 6) P(x + xx, y + yy, '#5a88b8');
-      R(x, y, 14, 1, '#9ac4e8'); R(x + 6, y, 2, 12, BARK[1]); R(x, y + 5, 14, 2, BARK[1]);
-      R(x - 2, y + 12, 18, 2, BARK[2]); R(x - 2, y + 12, 18, 1, BARK[3]);
-      R(x - 1, y + 14, 16, 3, '#6a4a2e'); [1, 4, 7, 10, 13].forEach((fx, i) => { P(x - 1 + fx, y + 13, ['#ff6b8b', '#ffd23f', '#ffffff', '#b48cff', '#ff8c3a'][i]); P(x - 1 + fx, y + 14, '#3f8a4f'); });
-      if (o.shutters) { R(x - 5, y - 1, 4, 14, rf[1]); R(x + 15, y - 1, 4, 14, rf[1]); R(x - 5, y - 1, 1, 14, rf[2]); R(x + 18, y - 1, 1, 14, rf[0]); }
-      out.lights.push({ x: x + 7, y: y + 6 });
-    });
-    // 门
-    if (o.door !== false) {
-      const dx = wx0 + (o.doorX !== undefined ? o.doorX : Math.round(w / 2 - 8)), dy = wy1 - 26;
-      R(dx - 2, dy - 2, 20, 26, BARK[0]); R(dx - 1, dy - 3, 18, 1, BARK[0]);
-      const dc = o.doorC || ['#5a2e1e', '#8a4a2a', '#b06a3a'];
-      R(dx, dy, 16, 22, dc[1]); R(dx + 1, dy - 1, 14, 1, dc[1]);
-      for (let x = dx + 3; x < dx + 16; x += 4) R(x, dy, 1, 22, dc[0]);
-      R(dx, dy, 1, 22, dc[2]); R(dx + 12, dy + 11, 2, 2, C.gold[1]); P(dx + 12, dy + 11, C.gold[2]);
-      R(dx - 3, wy1 - 3, 22, 3, '#9aa0b8'); R(dx - 3, wy1 - 3, 22, 1, '#c8cde0');
-      out.door = { x: dx + 8, y: wy1 };
-      if (o.sign) { const sx = dx + 20, sy = dy - 2; R(sx, sy, 8, 1, BARK[0]); P(sx + 1, sy + 1, BARK[0]); P(sx + 6, sy + 1, BARK[0]); R(sx - 1, sy + 2, 12, 11, BARK[2]); R(sx - 1, sy + 2, 12, 1, BARK[3]); R(sx, sy + 3, 10, 9, '#f2e4c2'); o.sign(A, sx + 1, sy + 4); }
+    // 重叠的檐影、排水管、墙角石和三层台基建立厚度。
+    R(wx0, wy0 + 4, w, 4, '#665e4d'); R(wx0, wy0 + 8, w, 2, '#96866b');
+    R(wx0 + w - 2, wy0 + 9, 2, wallH - 10, '#566365'); P(wx0 + w - 1, wy0 + 12, '#9fadaa');
+    for (let y = wy0 + 10; y < wy1 - 6; y += 8) {
+      R(wx0 - 1, y, 5, 5, '#b7b4a5'); R(wx0 - 1, y, 5, 1, '#ddd4b9');
+      R(wx0 + w - 4, y, 5, 5, '#939990'); R(wx0 + w - 4, y, 5, 1, '#b7b4a5');
     }
-    // 屋顶
-    for (let y = 0; y < roofH; y++) {
-      const t = y / roofH, inset = Math.round((1 - t) * 8), x0 = inset, x1 = W - inset;
-      const row = Math.floor(y / 5), ry = y % 5;
-      for (let x = x0; x < x1; x++) {
-        const sx = x + (row % 2) * 4, edge = sx % 8 === 0;
-        let c = ry === 4 ? rf[0] : ry === 0 ? rf[2] : rf[1];
-        if (edge && ry > 0) c = rf[0];
-        if (hash2(Math.floor(sx / 8), row, 11) > .8 && ry > 0 && ry < 4 && !edge) c = mix(rf[1], rf[2], .5);
-        if (x === x0 || x === x1 - 1) c = rf[0];
-        P(x, y, c);
+    R(wx0 - 1, wy1 - 7, w + 2, 7, '#596562'); R(wx0 - 1, wy1 - 7, w + 2, 2, '#9ba494'); R(wx0 - 2, wy1 - 2, w + 4, 2, '#758173');
+    for (let x = wx0 + 5; x < wx0 + w; x += 11) { P(x, wy1 - 4, '#424e4c'); P(x + 1, wy1 - 2, '#9cac87'); }
+    // 每种建筑有独立窗体与分格，暖色窗内有窗台和生活物件。
+    (o.windows || []).forEach((wx, index) => {
+      const x = wx0 + wx, y = wy0 + 14, ww = arch === 'workshop' ? 18 : 14, hh = arch === 'library' ? 25 : 20;
+      const frame = arch === 'lab' ? ['#485e67', '#8ca9a7', '#c3d0bf'] : timber;
+      R(x - 2, y - 2, ww + 4, hh + 4, frame[0]); R(x - 1, y - 1, ww + 2, hh + 2, frame[1]);
+      R(x, y, ww, hh, arch === 'lab' ? '#315b6b' : '#514d46');
+      R(x + 1, y + 1, ww - 2, hh - 2, arch === 'lab' ? '#51818c' : '#ac9469');
+      R(x + 2, y + 2, 3, hh - 4, arch === 'lab' ? '#87b9bc' : '#e1c18b');
+      for (let yy = 2; yy < hh - 3; yy++) if (yy < ww - 4) P(x + ww - yy - 2, y + yy, arch === 'lab' ? '#a1cecb' : '#e8cea0');
+      R(x + Math.floor(ww / 2) - 1, y, 2, hh, frame[0]); R(x, y + 7, ww, 2, frame[0]); R(x, y + 14, ww, 1, frame[1]);
+      R(x - 3, y + hh + 1, ww + 6, 3, frame[1]); R(x - 3, y + hh + 1, ww + 6, 1, frame[2]);
+      if (arch === 'library') {
+        for (let i = 0; i < 4; i++) { const bc = ['#a45f56', '#74988e', '#c8aa6b', '#7c83a4'][i]; R(x + 1 + i * 3, y + 18 - i % 2, 2, 6 + i % 2, bc); P(x + 1 + i * 3, y + 20, '#dfc890'); }
+        E(x + ww / 2, y - 2, ww / 2 + 2, 5, frame[0]); E(x + ww / 2, y - 2, ww / 2, 3, '#c3ad75'); R(x - 2, y - 1, ww + 4, 2, frame[0]);
+      } else if (arch !== 'lab' && arch !== 'workshop') {
+        R(x + 1, y + 1, 2, 13, '#d4a792'); R(x + ww - 3, y + 1, 2, 13, '#ba8d79');
+        R(x - 1, y + hh + 4, ww + 2, 4, '#835c45');
+        for (let i = 0; i < 5; i++) { const fx = x + i * 3; P(fx, y + hh + 2, '#7b9d62'); P(fx + 1, y + hh + 3, ['#d78f87', '#dfc17b', '#a9bb90'][i % 3]); }
       }
+      if (o.shutters && arch !== 'lab') [x - 6, x + ww + 2].forEach((sx, side) => { R(sx, y - 1, 4, hh + 2, rf[0]); R(sx + 1, y, 2, hh, rf[1]); for (let yy = 3; yy < hh; yy += 4) R(sx + 1, y + yy, 2, 1, side ? rf[0] : rf[2]); });
+      out.lights.push({ x: x + ww / 2, y: y + hh / 2 });
+    });
+    if (o.door !== false) {
+      const dx = wx0 + (o.doorX !== undefined ? o.doorX : Math.round(w / 2 - 8)), dy = wy1 - 38;
+      const dc = o.doorC || ['#4c3c30', '#806244', '#b48e60'];
+      R(dx - 3, dy - 3, 22, 38, '#3e3c35'); R(dx - 2, dy - 2, 20, 36, '#ac9875'); R(dx, dy, 16, 34, dc[1]); R(dx, dy, 1, 34, dc[2]);
+      R(dx + 2, dy + 3, 12, 10, '#334e54'); R(dx + 3, dy + 4, 4, 8, '#b4c6ad'); R(dx + 8, dy + 4, 5, 8, '#6f9692');
+      R(dx + 7, dy + 3, 1, 10, dc[0]); R(dx + 2, dy + 8, 12, 1, dc[0]);
+      [3, 9].forEach(xx => { R(dx + xx - 1, dy + 17, 5, 12, dc[0]); R(dx + xx, dy + 18, 3, 10, dc[1]); P(dx + xx, dy + 18, dc[2]); });
+      R(dx + 12, dy + 17, 2, 3, '#b89858'); P(dx + 12, dy + 17, '#ead29a');
+      R(dx - 5, wy1 - 4, 26, 4, '#8a9487'); R(dx - 5, wy1 - 4, 26, 1, '#c6c6ab'); R(dx - 3, wy1 - 1, 22, 1, '#59665d');
+      // 钢制门灯和小雨檐都在建筑本身的画布内，不增加碰撞。
+      R(dx - 7, dy + 5, 2, 12, '#404947'); L(dx - 6, dy + 5, dx - 11, dy + 5, '#404947'); R(dx - 13, dy + 7, 5, 8, '#5e6150'); R(dx - 12, dy + 8, 3, 5, '#e6b978'); P(dx - 11, dy + 8, '#fff0b4'); R(dx - 14, dy + 6, 7, 1, '#404947');
+      out.lights.push({ x: dx - 10, y: dy + 11 });
+      if (arch !== 'kitchen') { R(dx - 6, dy - 7, 28, 4, rf[1]); R(dx - 6, dy - 7, 28, 1, rf[2]); R(dx - 7, dy - 3, 30, 2, rf[0]); L(dx - 3, dy - 1, dx, dy + 3, timber[0]); L(dx + 19, dy - 1, dx + 16, dy + 3, timber[0]); }
+      out.door = { x: dx + 8, y: wy1 };
+      if (o.sign) { const sx = Math.min(W - 15, dx + 23), sy = dy + 1; R(sx - 2, sy - 3, 14, 1, timber[0]); R(sx, sy - 2, 1, 4, '#737a71'); R(sx + 8, sy - 2, 1, 4, '#737a71'); R(sx - 1, sy + 2, 12, 12, timber[1]); R(sx - 1, sy + 2, 12, 1, timber[2]); R(sx, sy + 3, 10, 9, '#dfcfa5'); o.sign(A, sx + 1, sy + 4); }
     }
-    R(8, 0, W - 16, 3, rf[0]); R(8, 0, W - 16, 1, rf[2]);
-    R(0, roofH - 2, W, 2, rf[0]);
-    if (o.chimney) { const cx = W - 26; R(cx, -0 + 2, 9, 12, '#8a4a3a'); R(cx, 2, 9, 1, '#b06a5a'); R(cx - 1, 0, 11, 3, '#5a3a32'); for (let y = 5; y < 14; y += 3) R(cx + ((y % 2) * 3), y, 4, 1, '#6a3a2e'); out.chimney = { x: cx + 4, y: 0 }; }
+    drawVillageRoof(A, W, roofH, rf, arch);
+    if (arch === 'kitchen') {
+      // 条纹布雨篷、垂边和木支撑形成咖啡馆的第二层轮廓。
+      for (let x = 3; x < W - 3; x++) { const stripe = Math.floor((x - 3) / 7) % 2; R(x, wy0 + 6, 1, 7, stripe ? '#c57f66' : '#e7d7b2'); R(x, wy0 + 12, 1, 2 + (stripe ? 0 : 1), stripe ? '#9b5d4f' : '#b7aa8b'); }
+      R(3, wy0 + 5, W - 6, 1, '#705747'); L(7, wy0 + 14, 12, wy0 + 19, '#765d42'); L(W - 8, wy0 + 14, W - 13, wy0 + 19, '#765d42');
+    } else if (arch === 'library') {
+      [wx0 + 2, wx0 + w - 7].forEach(x => { R(x, wy0 + 8, 5, wallH - 12, '#bac0b5'); R(x, wy0 + 8, 1, wallH - 12, '#e1ddc5'); R(x - 2, wy0 + 8, 9, 3, '#cccbb8'); R(x - 2, wy1 - 9, 9, 3, '#c0c3af'); });
+    } else if (arch === 'lab') {
+      R(wx0 + 2, wy0 + 10, w - 4, 2, '#5e9294'); R(wx0 + 3, wy0 + 12, w - 6, 1, '#a7cdc0');
+      R(W - 15, wy0 + 18, 6, 13, '#536a6d'); R(W - 14, wy0 + 20, 4, 3, '#a0cfb4'); R(W - 14, wy0 + 26, 4, 1, '#91b4b2');
+    } else if (arch === 'workshop') {
+      R(wx0, wy0 + 7, w, 4, timber[0]); R(wx0, wy0 + 7, w, 1, timber[2]);
+      [wx0 + 5, wx0 + w - 9].forEach(x => { R(x, wy0 + 10, 4, wallH - 15, timber[1]); R(x, wy0 + 10, 1, wallH - 15, timber[2]); P(x + 2, wy0 + 12, '#c4bc9a'); });
+      for (let i = 0; i < 3; i++) { R(W - 21 + i * 3, wy1 - 18, 2, 10, '#536568'); P(W - 21 + i * 3, wy1 - 19, '#b6c2b3'); }
+    }
+    if (o.chimney) {
+      const cx = W - 26, cc = arch === 'workshop' ? ['#4c5b62', '#82918f', '#b9c1ad'] : ['#765041', '#a57659', '#d2aa7d'];
+      R(cx, 4, 11, 22, cc[0]); R(cx + 1, 4, 8, 21, cc[1]);
+      for (let y = 7; y < 25; y += 4) { R(cx + 1, y, 8, 1, cc[0]); P(cx + (y % 8 ? 4 : 7), y + 2, cc[0]); }
+      R(cx - 2, 2, 15, 4, cc[0]); R(cx - 2, 2, 15, 1, cc[2]); R(cx + 1, 3, 9, 1, '#333a36'); out.chimney = { x: cx + 5, y: 2 };
+    }
+    // 檐角爬藤与墙边苔痕，让建筑落在环境里。
+    if (arch !== 'lab' && arch !== 'workshop') for (let i = 0; i < 11; i++) { const vx = wx0 + w - 7 - (i % 3), vy = wy1 - 12 - i * 3; if (vy < wy0 + 10) break; P(vx, vy, '#45674f'); R(vx - 2, vy - 1, 2, 1, '#799365'); P(vx + 1, vy - 2, '#9ca97a'); }
     if (o.deco) o.deco(A, W, H, wx0, wy0, wy1);
   });
   out.w = W; out.h = H;
   return out;
+}
+
+function drawVillageRoof(A, W, roofH, palette, arch) {
+  const { R, P, L, E } = A;
+  const rf = palette.map((c, i) => mix(c, ['#46545b', '#8b7663', '#c1b28c'][i], .22));
+  for (let y = 0; y < roofH; y++) for (let x = 0; x < W; x++) {
+    const inset = arch === 'lab' ? 2 : arch === 'library' ? Math.max(0, Math.round((1 - y / roofH) * 12)) : Math.round((1 - y / roofH) * 9);
+    const saw = arch === 'workshop' ? 4 + Math.floor((27 - ((x + 3) % 28)) * .45) : arch === 'lab' ? 8 : 0;
+    if (x < inset || x >= W - inset || y < saw) continue;
+    const row = Math.floor(y / 5), tx = (x + (row % 2) * 5) % 10, ry = y % 5;
+    let c = ry === 4 || tx === 0 ? rf[0] : ry === 0 ? rf[2] : rf[1];
+    if (ry > 0 && ry < 4 && tx > 1 && hash2(Math.floor(x / 10), row, 17) > .78) c = mix(rf[1], rf[2], .26);
+    if (x > W * .7) c = shade(c, .87); P(x, y, c);
+  }
+  R(0, roofH - 3, W, 3, rf[0]); R(0, roofH - 3, W, 1, rf[2]); R(2, roofH, W - 4, 2, '#463f35');
+  if (arch === 'lab') {
+    // 低平金属屋顶嵌入倾斜玻璃天窗和小型观测穹顶。
+    R(1, 7, W - 2, 3, '#46646c'); R(1, 7, W - 2, 1, '#a3bcaf');
+    const gx = 12, gy = 16, gw = Math.max(36, W - 54);
+    R(gx - 2, gy - 2, gw + 4, 20, '#354e59'); R(gx, gy, gw, 16, '#477f8c');
+    for (let x = gx; x < gx + gw; x += 8) { R(x, gy, 2, 16, '#c0ccbd'); L(x + 2, gy + 14, x + 7, gy + 2, '#7db6b7'); }
+    R(gx, gy + 7, gw, 2, '#75978f'); R(gx - 2, gy + 17, gw + 4, 2, '#a5b8a7');
+    const cx = W - 27; E(cx, 20, 14, 12, '#687f83'); E(cx - 2, 18, 11, 10, '#9fb9b2'); R(cx - 14, 20, 28, 9, '#667f82'); R(cx - 12, 22, 24, 2, '#b2c8b7'); L(cx, 7, cx, 18, '#d0d8bd'); P(cx, 5, '#e5bf83');
+  } else if (arch === 'workshop') {
+    // 锯齿形工业屋顶，每段朝北的玻璃面与瓦面有不同倾角。
+    for (let x = 5; x < W - 10; x += 28) { L(x, 15, x + 23, 4, '#b7c1ac'); R(x + 22, 5, 3, 13, '#394f5a'); R(x + 23, 7, 1, 8, '#89aead'); L(x, 16, x + 23, 5, '#5e7580'); }
+    R(8, roofH - 11, W - 16, 2, '#89958b');
+  } else {
+    // 交叉山墙/中央藏书阁的前脸，建立第二个屋顶体积。
+    const cx = arch === 'library' ? W / 2 : W * .33, half = arch === 'library' ? 22 : 17, top = arch === 'library' ? 4 : 9, bottom = roofH - 5;
+    for (let y = top; y < bottom; y++) { const hw = Math.min(half, (y - top) * .85); R(cx - hw, y, hw * 2 + 1, 1, arch === 'library' ? '#b8b7a1' : '#c9b38c'); }
+    L(cx, top - 2, cx - half - 3, top + half * 1.2, rf[0]); L(cx, top - 3, cx + half + 3, top + half * 1.2, rf[0]);
+    L(cx, top - 4, cx - half - 3, top + half * 1.2 - 2, rf[2]); L(cx, top - 4, cx + half + 3, top + half * 1.2 - 2, rf[2]);
+    R(cx - half, bottom - 2, half * 2, 2, '#665a45');
+    if (arch === 'library') {
+      E(cx, top + 20, 9, 9, '#59594d'); E(cx, top + 20, 7, 7, '#dfcfa1'); E(cx, top + 20, 5.5, 5.5, '#8fa7a0');
+      L(cx, top + 20, cx, top + 15, '#3e5055'); L(cx, top + 20, cx + 4, top + 22, '#3e5055'); P(cx, top + 20, '#f3ddb1');
+      for (const x of [8, W - 11]) { R(x, 3, 3, 13, '#a5ad9d'); R(x - 1, 1, 5, 3, '#d1cfb5'); }
+    } else {
+      R(cx - 6, top + 17, 12, 13, '#5d4e3c'); R(cx - 4, top + 19, 8, 9, '#688787'); R(cx - 3, top + 19, 2, 8, '#b6c6a6'); R(cx - 1, top + 19, 1, 9, '#4e5143'); R(cx - 4, top + 23, 8, 1, '#4e5143'); R(cx - 8, top + 29, 16, 2, '#a28560');
+      L(cx, top + 5, cx, top + 15, '#7a6247');
+    }
+  }
 }
 
 /* ---------- 小道具 ---------- */
@@ -187,6 +262,7 @@ function buildProps() {
     for (let y = 4; y < 30; y++) for (let x = 2; x < 28; x++) { const c = A.G(x, y); if (c === g[1]) { if (x + y < 26) A.P(x, y, g[2]); else if (x + y > 44) A.P(x, y, g[0]); } }
     A.R(19, 10, 2, 2, '#5a3a0a');
   });
+  buildVillageProps();
   PROP.flag = null;
 }
 const DIGITS = [['111', '101', '101', '101', '111'], ['010', '110', '010', '010', '111'], ['111', '001', '111', '100', '111'], ['111', '001', '111', '001', '111'], ['101', '101', '111', '001', '001'], ['111', '100', '111', '001', '111']];
@@ -213,4 +289,57 @@ function buildIcons() {
   I('lib', A => { A.R(1, 6, 14, 9, '#e05a5a'); A.R(1, 6, 14, 2, '#ff8a8a'); [2, 7, 12].forEach(x => { A.R(x, 3, 3, 3, '#e05a5a'); A.R(x, 3, 3, 1, '#ff8a8a'); }); A.R(1, 13, 14, 2, '#a83a3a'); });
   I('secret', A => { A.E(5, 7, 4, 4, C.gold[1]); A.E(5, 7, 1.6, 1.6, '#3a2a10'); A.R(8, 6, 7, 2, C.gold[1]); A.R(12, 8, 2, 3, C.gold[1]); A.R(9, 8, 1, 2, C.gold[1]); A.P(3, 5, C.gold[2]); A.R(8, 6, 7, 1, C.gold[2]); });
   I('lock', A => { A.R(3, 7, 10, 8, '#5a5f78'); A.R(3, 7, 10, 1, '#8a8fa8'); A.R(5, 2, 1, 5, '#8a8fa8'); A.R(10, 2, 1, 5, '#8a8fa8'); A.R(5, 1, 6, 1, '#8a8fa8'); A.R(7, 10, 2, 3, '#2a2034'); });
+}
+
+
+/* ---------- 村民日常物件：同一套原生像素调色与轮廓 ---------- */
+function buildVillageProps() {
+  PROP.flowerbed = spr(34, 16, A => {
+    A.R(1, 10, 32, 6, '#79513e'); A.R(0, 9, 34, 2, '#bd8a5f'); A.R(2, 12, 30, 1, '#9c6b4c');
+    for (let i = 0; i < 7; i++) { const x = 3 + i * 4, y = 3 + i % 3; A.R(x, y, 1, 8 - y, '#416c43'); A.P(x - 1, y + 3, '#80aa62'); A.P(x + 1, y + 4, '#80aa62'); const c = ['#ed998b', '#f4d68c', '#b49dca'][i % 3]; A.R(x - 1, y, 3, 1, c); A.R(x, y - 1, 1, 3, c); A.P(x, y, '#fff1be'); }
+  });
+  PROP.basket = spr(20, 17, A => {
+    A.E(10, 8, 8, 7, '#a57445'); A.E(10, 7, 6, 5, '#4c3c2f'); A.R(2, 8, 16, 8, '#c29359');
+    for (let y = 9; y < 16; y += 3) A.R(3, y, 14, 1, '#e1b97c');
+    for (let x = 4; x < 17; x += 4) A.R(x, 9, 1, 6, '#9a6c42');
+    [[5, 6], [9, 7], [13, 5], [15, 7]].forEach(([x, y], i) => { A.E(x, y, 2.6, 2.6, i % 2 ? '#e5ae55' : '#c96350'); A.P(x - 1, y - 1, '#f5ca8b'); A.P(x, y - 3, '#54764a'); });
+  });
+  PROP.wateringcan = spr(19, 16, A => {
+    A.E(7, 9, 6, 6, '#548f91'); A.R(3, 6, 8, 8, '#72b1a7'); A.R(4, 6, 2, 7, '#a4d0bc'); A.R(1, 14, 12, 2, '#3c676d');
+    A.L(12, 11, 16, 5, '#548f91'); A.L(13, 11, 17, 5, '#72b1a7'); A.R(15, 3, 4, 3, '#a4d0bc');
+    A.R(4, 1, 6, 1, '#3c676d'); A.R(3, 2, 1, 5, '#548f91'); A.R(10, 2, 1, 5, '#548f91');
+  });
+  PROP.bicycle = spr(32, 22, A => {
+    [7, 25].forEach(x => { A.E(x, 15, 6, 6, '#3a3446'); A.E(x, 15, 4.5, 4.5, '#bbc0ad'); A.E(x, 15, 3.5, 3.5, '#62815a'); A.L(x, 11, x, 19, '#d3d0b9'); A.L(x - 4, 15, x + 4, 15, '#d3d0b9'); });
+    A.L(7, 15, 12, 7, '#cc735a'); A.L(12, 7, 17, 15, '#cc735a'); A.L(17, 15, 7, 15, '#edac7c'); A.L(12, 7, 23, 7, '#edac7c'); A.L(17, 15, 23, 7, '#cc735a'); A.L(25, 15, 22, 4, '#9ca99d');
+    A.R(9, 5, 7, 2, '#3a3446'); A.R(21, 2, 6, 2, '#3a3446'); A.R(24, 4, 6, 5, '#c59b62'); A.R(25, 5, 4, 1, '#e1bf82');
+  });
+  PROP.teatable = spr(31, 23, A => {
+    A.R(3, 13, 3, 10, BARK[1]); A.R(25, 13, 3, 10, BARK[1]); A.R(0, 8, 31, 6, BARK[2]); A.R(0, 8, 31, 2, BARK[3]);
+    A.R(10, 8, 11, 7, '#d7b9a0'); A.R(11, 9, 2, 6, '#f0ddbc'); A.R(18, 9, 2, 6, '#f0ddbc');
+    A.E(15, 5, 4, 3, '#629b94'); A.R(14, 1, 3, 2, '#a3c7b0'); A.R(19, 4, 3, 1, '#629b94'); A.R(5, 5, 3, 3, '#f4e6c5'); A.R(24, 5, 3, 3, '#f4e6c5'); A.P(6, 5, '#ac7946'); A.P(25, 5, '#ac7946');
+  });
+  PROP.bookcart = spr(25, 29, A => {
+    A.R(2, 2, 2, 23, '#9b704c'); A.R(21, 2, 2, 23, '#9b704c'); A.R(0, 1, 25, 2, '#c49a65');
+    for (let row = 0; row < 2; row++) { const y = 4 + row * 11; for (let i = 0; i < 6; i++) { const c = ['#9bba9c', '#d99a78', '#83a9bc', '#c7af75'][i % 4]; A.R(4 + i * 3, y + i % 3, 2, 8 - i % 3, c); A.P(4 + i * 3, y + 5, '#eee0bb'); } A.R(2, y + 8, 21, 2, '#c49a65'); }
+    A.R(2, 25, 21, 2, '#6e5542'); A.R(4, 27, 3, 2, '#353343'); A.R(18, 27, 3, 2, '#353343');
+  });
+  PROP.picnic = spr(34, 18, A => {
+    A.R(1, 2, 32, 15, '#e4cba5'); for (let y = 2; y < 17; y += 3) for (let x = 1; x < 33; x += 4) if ((x + y) % 3) A.R(x, y, 3, 2, '#bd7a69');
+    A.E(11, 9, 5, 3, '#f3e8c8'); A.E(11, 8, 3.5, 2, '#d5ab60'); A.R(23, 4, 4, 6, '#6e9c91'); A.R(24, 3, 2, 1, '#e6d4a9'); A.R(21, 12, 6, 3, '#edc070'); A.P(22, 12, '#8c6845');
+  });
+}
+
+function makeVillageAnimal(kind, frame = 0) {
+  return spr(kind === 'cat' ? 22 : 16, kind === 'cat' ? 15 : 14, A => {
+    if (kind === 'cat') {
+      A.E(10, 10, 7, 4, '#d39d69'); A.R(5, 11, 3, 4 - frame, '#bd845a'); A.R(13, 11, 3, 4 - (1 - frame), '#bd845a');
+      A.E(5, 6, 4.5, 4, '#e7b582'); A.R(1, 1, 2, 4, '#d39d69'); A.R(7, 1, 2, 4, '#d39d69'); A.P(2, 2, '#edb6ac'); A.P(7, 2, '#edb6ac');
+      A.P(3, 6, '#34313c'); A.P(7, 6, '#34313c'); A.P(5, 8, '#9c6257'); A.R(4, 9, 3, 1, '#f6d9ab'); A.L(16, 10, 20, 6 + frame, '#d39d69'); A.R(20, 3 + frame, 2, 4, '#d39d69');
+      A.R(10, 7, 2, 3, '#a96e49'); A.R(14, 8, 1, 3, '#a96e49');
+    } else {
+      A.E(8, 8, 5.5, 4.5, '#e7dec1'); A.E(11, 4, 3, 3.5, '#f7ebce'); A.R(9, 0, 3, 2, '#c46352'); A.P(12, 3, '#34313c'); A.R(14, 4, 2, 1, '#e4a64c'); A.P(12, 7, '#c46352');
+      A.L(3, 7, 1, 4, '#b9b6a4'); A.L(5, 8, 2, 3, '#e7dec1'); A.R(5, 11, 1, 3 - frame, '#ce9a58'); A.R(10, 11, 1, 2 + frame, '#ce9a58'); A.R(5, 8, 4, 1, '#b9b6a4');
+    }
+  });
 }

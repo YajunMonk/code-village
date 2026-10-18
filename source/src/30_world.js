@@ -90,7 +90,8 @@ function lamp(x, row) { const px = x * TILE + 8, py = row * TILE + 14; addObj({ 
 function sign(z, tx, ty, text) { const px = tx * TILE + 8, py = ty * TILE + 14; addObj({ x: px, y: py, img: PROP.sign, solid: [-8, -4, 16, 4], shadow: [8, 2], interact: { type: 'sign', text, z } }); reserve(tx, ty, 1, 1); }
 function house(z, tx, baseRow, opts, key) {
   const H = makeHouse(opts), px = tx * TILE, py = baseRow * TILE;
-  const o = addObj({ x: px + H.w / 2, y: py, img: H.canvas, ox: -(H.w / 2) | 0, oy: -H.h, solid: [-(H.w / 2) + 5, -(opts.wallH || 40) + 10, H.w - 10, (opts.wallH || 40) - 10], kind: 'house' });
+  const o = addObj({ x: px + H.w / 2, y: py, img: H.canvas, ox: -(H.w / 2) | 0, oy: -H.h, solid: [-(H.w / 2) + 5, -(opts.wallH || 40) + 10, H.w - 10, (opts.wallH || 40) - 10], kind: 'house', arch: H.arch });
+  if (H.door) o.doorWorld = { x: px + H.door.x, y: py + 8 };
   H.lights.forEach(l => lights.push({ x: px + l.x, y: py - H.h + l.y, r: 46, c: '#ffc070', night: true, win: true }));
   if (H.chimney) chimneys.push({ x: px + H.chimney.x, y: py - H.h + H.chimney.y });
   reserve(tx - 1, baseRow - Math.ceil(H.h / TILE), Math.ceil(H.w / TILE) + 2, Math.ceil(H.h / TILE) + 1);
@@ -134,7 +135,7 @@ function buildZone(z, x0, rnd) {
       break;
     }
     case 1: {
-      house(z, x0 + 3, 12, { w: 96, roof: ['#7a2a2a', '#c4473d', '#e8786a'], wall: 'plaster', windows: [8, 70], chimney: true, shutters: true, sign: (A, x, y) => { A.E(x + 4, y + 4, 4, 2.5, '#e8e8f0'); A.R(x + 1, y + 2, 7, 1, '#f4c060'); A.R(x + 6, y - 2, 1, 4, '#8a5a3a'); } });
+      house(z, x0 + 3, 12, { arch: 'kitchen', w: 96, roof: ['#7a2a2a', '#c4473d', '#e8786a'], wall: 'plaster', windows: [8, 70], chimney: true, shutters: true, sign: (A, x, y) => { A.E(x + 4, y + 4, 4, 2.5, '#e8e8f0'); A.R(x + 1, y + 2, 7, 1, '#f4c060'); A.R(x + 6, y - 2, 1, 4, '#8a5a3a'); } });
       fillT(x0 + 3, 18, 10, 6, 'f'); reserve(x0 + 2, 17, 12, 8);
       for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) addObj({ x: (x0 + 4 + c * 2.4) * TILE, y: (19 + r * 2) * TILE + 10, img: (r + c) % 2 ? PROP.crops : PROP.cabbage, shadow: null });
       for (let i = 0; i < 11; i++) addObj({ x: (x0 + 2.5 + i) * TILE + 8, y: 17 * TILE + 8, img: PROP.fence, solid: [-8, -3, 16, 3] });
@@ -167,7 +168,7 @@ function buildZone(z, x0, rnd) {
       break;
     }
     case 6: {
-      house(z, x0 + 1, 12, { w: 128, roof: ['#7a1e1e', '#c43a3a', '#ec6a5a'], wall: 'plaster', windows: [8, 40, 100], doorX: 70, chimney: true, shutters: true, sign: (A, x, y) => { A.E(x + 4, y + 3, 4, 3, '#ffd23f'); A.R(x + 2, y + 2, 5, 1, '#c43a3a'); } });
+      house(z, x0 + 1, 12, { arch: 'kitchen', w: 128, roof: ['#7a1e1e', '#c43a3a', '#ec6a5a'], wall: 'plaster', windows: [8, 40, 100], doorX: 70, chimney: true, shutters: true, sign: (A, x, y) => { A.E(x + 4, y + 3, 4, 3, '#ffd23f'); A.R(x + 2, y + 2, 5, 1, '#c43a3a'); } });
       [[x0 + 4, 21], [x0 + 9, 21.5]].forEach(([x, y]) => { prop(x, y, PROP.umbrella, 20, 6, [12, 3]); reserve(Math.floor(x) - 1, Math.floor(y) - 2, 3, 3); });
       decor.push({ kind: 'lanterns', x1: (x0 + 1) * TILE + 6, x2: (x0 + 10) * TILE + 6, y: 8 * TILE });
       for (let i = 0; i < 6; i++) lights.push({ x: (x0 + 1.4 + i * 1.6) * TILE, y: 8.6 * TILE, r: 34, c: '#ff9a5a', night: true });
@@ -197,7 +198,7 @@ function buildZone(z, x0, rnd) {
       break;
     }
     case 10: {
-      house(z, x0 + 2, 12, { w: 112, roof: ['#1e5a6a', '#2a8aa0', '#5ac8d8'], wall: 'white', windows: [8, 40, 86], doorX: 62, sign: (A, x, y) => { A.R(x + 1, y, 7, 7, '#1a2440'); A.R(x + 2, y + 2, 2, 2, '#5af0ff'); A.R(x + 5, y + 2, 2, 2, '#5af0ff'); } });
+      house(z, x0 + 2, 12, { arch: 'lab', w: 112, roof: ['#1e5a6a', '#2a8aa0', '#5ac8d8'], wall: 'white', windows: [8, 40, 86], doorX: 62, sign: (A, x, y) => { A.R(x + 1, y, 7, 7, '#1a2440'); A.R(x + 2, y + 2, 2, 2, '#5af0ff'); A.R(x + 5, y + 2, 2, 2, '#5af0ff'); } });
       prop(x0 + 17, 10.8, PROP.dish, 20, 6, [12, 3]); reserve(x0 + 16, 8, 3, 3);
       prop(x0 + 5, 21, PROP.server2, 34, 6, [18, 3]); reserve(x0 + 3, 19, 5, 3);
       for (let k = 0; k < 2; k++) lights.push({ x: (x0 + 4.5 + k * 1.2) * TILE, y: 20 * TILE, r: 26, c: '#5ad06a', always: true, flicker: .3 });
@@ -215,13 +216,13 @@ function buildZone(z, x0, rnd) {
       break;
     }
     case 13: {
-      house(z, x0 + 1, 12, { w: 128, wallH: 44, roofH: 40, roof: ['#1a3a7a', '#2a5ab0', '#5a8ae0'], wall: 'stone', windows: [10, 44, 100], doorX: 64, sign: (A, x, y) => { A.R(x + 1, y, 7, 7, '#3a7ae0'); A.R(x + 2, y + 1, 5, 5, '#fff8e4'); A.R(x + 4, y + 1, 1, 5, '#c8cde0'); } });
+      house(z, x0 + 1, 12, { arch: 'library', w: 128, wallH: 44, roofH: 40, roof: ['#1a3a7a', '#2a5ab0', '#5a8ae0'], wall: 'stone', windows: [10, 44, 100], doorX: 64, sign: (A, x, y) => { A.R(x + 1, y, 7, 7, '#3a7ae0'); A.R(x + 2, y + 1, 5, 5, '#fff8e4'); A.R(x + 4, y + 1, 1, 5, '#c8cde0'); } });
       [[x0 + 3, 20], [x0 + 6, 20], [x0 + 9, 20]].forEach(([x, y]) => prop(x, y, PROP.shelf, 26, 4, [14, 2]));
       prop(x0 + 6, 23, PROP.bench, 26, 5); reserve(x0 + 2, 18, 9, 6);
       break;
     }
     case 14: {
-      house(z, x0 + 2, 12, { w: 112, roof: ['#3a3e52', '#5a5f78', '#8a8fa8'], wall: 'stone', windows: [10, 88], doorX: 46, chimney: true, sign: (A, x, y) => { A.E(x + 4, y + 3, 3, 3, '#8a8fa8'); A.E(x + 4, y + 3, 1, 1, '#3a3e52'); } });
+      house(z, x0 + 2, 12, { arch: 'workshop', w: 112, roof: ['#3a3e52', '#5a5f78', '#8a8fa8'], wall: 'stone', windows: [10, 88], doorX: 46, chimney: true, sign: (A, x, y) => { A.E(x + 4, y + 3, 3, 3, '#8a8fa8'); A.E(x + 4, y + 3, 1, 1, '#3a3e52'); } });
       prop(x0 + 16.5, 11.4, PROP.gear, 14, 4, [8, 2]); reserve(x0 + 16, 10, 2, 2);
       [[x0 + 4, 20, 'toolbox'], [x0 + 7, 21, 'gear'], [x0 + 10, 20, 'crate'], [x0 + 11, 20.2, 'toolbox'], [x0 + 13, 22, 'barrel']].forEach(([x, y, k]) => prop(x, y, PROP[k]));
       break;
@@ -308,6 +309,7 @@ function buildZone(z, x0, rnd) {
   }
   // 告示牌
   if (SIGN_TEXT[z]) sign(z, x0 + 16, ROAD + 2, SIGN_TEXT[z]);
+  dressVillage(z, x0);
   // 随机装饰
   const darkZ = [9, 20, 24, 25].includes(z);
   const tries = darkZ ? 22 : 34;
@@ -329,9 +331,114 @@ function buildZone(z, x0, rnd) {
     decor.push(rnd() < .55 ? { kind: 'grass', x: px, y: py, s: rnd() * 6 } : { kind: 'flower', x: px, y: py, c: pick(flowers), s: rnd() * 6 });
   }
 }
+/* 门前庭院按房屋组织，不把生活物件随机撒在草地上。
+ * 铺地与矮景没有碰撞；保留门前 40px 和任务人物周边，装饰区预留给整组家具。 */
+function dressCourtyard(z, x0) {
+  const h = objects.find(o => o.kind === 'house' && Math.floor(o.x / (ZW * TILE)) === z);
+  if (!h || !h.doorWorld) return;
+  const left = h.x + h.ox, right = left + h.img.width, gate = h.doorWorld.x;
+  const theme = h.arch === 'kitchen' ? 'kitchen' : [11, 13, 16].includes(z) ? 'library' :
+    [14, 17, 19].includes(z) ? 'workshop' : [10, 21, 23].includes(z) ? 'lab' : 'cottage';
+  const floor = (x, y, w, ht, kind = theme) => {
+    decor.push({ kind: 'courtyardFloor', x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(ht), theme: kind });
+    reserve(Math.floor(x / TILE), Math.floor(y / TILE), Math.ceil(w / TILE), Math.ceil(ht / TILE));
+  };
+  const place = (key, x, y) => {
+    const img = PROP[key]; if (!img) return;
+    // Existing solid props and quest figures keep their visual breathing room.
+    if ([NPC_SPOTS[z], SIDE_SPOTS[z]].some(p => p && Math.hypot(p.x - x, p.y - y) < 35)) return;
+    if (Math.abs(x - gate) < 23 && Math.abs(y - h.y) < 40) return;
+    if (objects.some(o => o.solid && o !== h && Math.abs(o.x - x) < (img.width + Math.min(o.img?.width || 12, 28)) / 2 && Math.abs(o.y - y) < 15)) return;
+    addObj({ x, y, img, kind: 'courtyardProp', shadow: key.includes('Fence') ? null : [Math.min(15, img.width / 2), 2] });
+  };
+  // A shallow porch joins the existing door path. Its border has an actual opening.
+  floor(left + 3, h.y - 1, h.img.width - 6, 27);
+  decor.push({ kind: 'doorstep', x: gate, y: h.y + 3, end: ROAD * TILE, theme });
+  for (const x of [left + 14, right - 14]) {
+    if (Math.abs(x - gate) > 31) place(theme === 'kitchen' || theme === 'lab' ? 'yardHerbs' : 'yardFlowers', x, h.y + 23);
+  }
+  // Choose one lateral alcove. The occupied side of the street stays clear.
+  const sideRight = right + 56 < NPC_SPOTS[z].x + 12;
+  const sideX = sideRight ? right + 5 : left - 56;
+  if (sideX >= x0 * TILE + 12 && sideX + 52 <= (x0 + ZW - 2) * TILE) {
+    const sy = h.y - 44;
+    floor(sideX, sy, 52, 53);
+    place('yardFence', sideX + 26, sy + 8);
+    place('yardSideFence', sideX + (sideRight ? 49 : 3), sy + 39);
+    const sets = {
+      kitchen: [['basket', 14, 27], ['wateringcan', 37, 35], ['yardHerbs', 25, 53]],
+      library: [['bookcart', 16, 33], ['wateringcan', 39, 38], ['yardFlowers', 25, 53]],
+      workshop: [['crate', 15, 31], ['toolbox', 36, 37], ['yardHerbs', 26, 53]],
+      lab: [['wateringcan', 14, 31], ['crate', 36, 35], ['yardHerbs', 25, 53]],
+      cottage: [['basket', 14, 31], ['wateringcan', 37, 37], ['yardFlowers', 25, 53]],
+    };
+    for (const [key, x, y] of sets[theme]) place(key, sideX + x, sy + y);
+  }
+  // Café seating reads as a small terrace: the existing umbrellas share one paved garden.
+  if (z === 6) {
+    floor((x0 + 1.5) * TILE, 18.2 * TILE, 154, 74, 'kitchen');
+    for (const x of [x0 * TILE + 44, x0 * TILE + 149]) {
+      place('yardFence', x, 18.7 * TILE); place('yardFlowers', x, 23.2 * TILE);
+    }
+    place('wateringcan', x0 * TILE + 183, 22.4 * TILE);
+    place('basket', x0 * TILE + 175, 20.7 * TILE);
+    decor.push({ kind: 'gardenSteps', x: gate, y: 16.4 * TILE, end: 18.2 * TILE });
+  }
+  // Continuous curb segments end before doors, noticeboards and quest approaches.
+  decor.push({ kind: 'streetEdge', x: x0 * TILE + 32, y: ROAD * TILE - 3, w: (ZW - 4) * TILE,
+    gaps: [gate, NPC_SPOTS[z].x], lowerGaps: [gate, (x0 + 16.5) * TILE, SIDE_SPOTS[z]?.x].filter(Number.isFinite) });
+}
+/* 小镇生活布景只占用空地，不侵入主路、门前和任务人物周边。 */
+function dressVillage(z, x0) {
+  dressCourtyard(z, x0);
+  if (BOSS_ZONES[z] || z === 12) return;
+  const items = z === 0 ? ['picnic', 'flowerbed', 'bench'] : z === 1 ? ['basket', 'wateringcan', 'flowerbed'] :
+    z === 13 || z === 11 ? ['bookcart', 'teatable', 'flowerbed'] : z === 8 || z === 14 || z === 23 ? ['toolbox', 'bicycle', 'basket'] :
+    ['bicycle', 'flowerbed', 'teatable'];
+  const sites = [[18, 7], [5, 23], [19, 23], [15, 7], [8, 18], [4, 8]];
+  let placed = 0;
+  for (const [dx, row] of sites) {
+    if (placed >= items.length) break;
+    const tx = x0 + dx;
+    if (!tileFree(tx - 1, row - 1, 3, 2)) continue;
+    const key = items[placed++], img = PROP[key];
+    if (!img) continue;
+    prop(tx + .4, row + .8, img, Math.max(8, img.width - 5), 4, [Math.max(6, img.width / 2), 2]);
+    reserve(tx - 1, row - 1, 3, 2);
+    if (key === 'teatable') decor.push({ kind: 'teaSteam', x: (tx + .4) * TILE, y: (row + .8) * TILE - 19, s: z });
+  }
+  // 每一段故事完成后，这一段灯串点亮；未亮时仍保留纸灯的轮廓。
+  if (z < 24) {
+    const x1 = (x0 + 3) * TILE, x2 = (x0 + 19) * TILE, y = 7.5 * TILE;
+    decor.push({ kind: 'festivalRibbon', x1, x2, y, z });
+    for (let i = 0; i < 5; i++) { const f = (i + .5) / 5; lights.push({ x: x1 + (x2 - x1) * f, y: y + Math.sin(f * Math.PI) * 13 + 8, r: 33, c: i % 2 ? '#f4b776' : '#f3d69a', always: true, unlockZone: z, flicker: .025 }); }
+  }
+  // 两侧小卵石把道路收边，草地与通行区域一眼可分。
+  for (let i = 2; i < ZW - 2; i += 3) {
+    decor.push({ kind: 'roadstone', x: (x0 + i) * TILE, y: (ROAD + (i % 2 ? 2 : 0)) * TILE + (i % 2 ? 2 : -1), s: z + i });
+  }
+  for (const [dx, row] of [[18, 20], [6, 18], [18, 10]]) {
+    const tx = x0 + dx;
+    if (!tileFree(tx - 1, row - 1, 3, 2)) continue;
+    const kind = z === 1 || z === 3 ? 'hen' : 'cat', phase = z * .73;
+    addObj({ kind: 'villageAnimal', animal: kind, phase, x: (tx + .5) * TILE, y: (row + .8) * TILE, shadow: null, draw(g, sx, sy) {
+      const step = Math.sin(worldT * .45 + phase), walking = Math.abs(step) < .8;
+      const im = cached('village-' + kind + (walking ? Math.floor(worldT * 3) % 2 : 0), () => makeVillageAnimal(kind, walking ? Math.floor(worldT * 3) % 2 : 0));
+      const ox = Math.round(step * 9); shadowAt(g, sx + ox, sy - 1, 7, 2);
+      const face = (Math.cos(worldT * .45 + phase) > 0) === (kind === 'cat') ? cached('village-flip-' + kind + (walking ? Math.floor(worldT * 3) % 2 : 0), () => flipH(im)) : im;
+      g.drawImage(face, sx + ox - Math.floor(face.width / 2), sy - face.height + 1);
+    } });
+    break;
+  }
+  if (z <= 13 || z === 26) decor.push({ kind: 'butterfly', x: (x0 + 18) * TILE, y: 21 * TILE, s: z * .8, c: z % 2 ? '#f5cb88' : '#d6a3cb' });
+  if (z === 0) {
+    decor.push({ kind: 'pondduck', x: 10 * TILE, y: 21 * TILE, s: 0 });
+    decor.push({ kind: 'pondduck', x: 12 * TILE, y: 22 * TILE, s: 2 });
+  }
+}
 const SIGN_TEXT = [
-  '【代码村】欢迎你！\n人口：87 人。黑话：多到数不清。',
-  '锅锅的小厨房\n营业时间：有电的时候。',
+  '【星灯镇】欢迎你！\n把一盏盏灯点亮，让今晚的灯会重新开始。',
+  '锅锅的小厨房\n营业时间：灯亮着的时候。',
   '点子小屋\n本屋名言："先想清楚，再动手。"',
   'MVP 集市\n今日特价：先做最重要的那一点点。',
   '前方：迷雾谷\n注意：说不清楚的需求，会变成迷雾。',
@@ -360,11 +467,11 @@ const SIGN_TEXT = [
 ];
 
 /* ---------- 地面烘焙 ---------- */
-const GRASS = ['#2c6444', '#3a7f4a', '#4a9450', '#5ea656', '#86c266'];
-const MEAD = ['#3a7a48', '#4a904e', '#5aa456', '#72b85e', '#9ad070'];
-const DIRT = ['#6e4a32', '#93683f', '#b08354', '#c99c68', '#e0bc86'];
+const GRASS = ['#3d5d46', '#52754f', '#6b895b', '#839b6a', '#acbb85'];
+const MEAD = ['#4c6b48', '#628153', '#809763', '#9aac78', '#c1c88b'];
+const DIRT = ['#705d44', '#917953', '#b19a70', '#c6b087', '#ddd0a5'];
 const DDIRT = ['#1e1630', '#2e2446', '#3e325c', '#4e4270', '#6a5a90'];
-const WATER = ['#1c3d74', '#25569a', '#2f6fbc', '#4a92d8', '#8acbee'];
+const WATER = ['#284b60', '#39697b', '#518795', '#79a9ad', '#b1c9c0'];
 const STONE = ['#4e5268', '#7a7f98', '#8c91aa', '#9ea3bc', '#c4c8da'];
 const DARK = ['#160f24', '#1e1630', '#261c3c', '#30244a', '#3c2e5a'];
 const DARKB = ['#0c1230', '#121a3e', '#18224c', '#1e2a5c', '#2a3a74'];
@@ -421,8 +528,8 @@ function groundColor(x, y, t, at, zone) {
   if (t === 0 || t === 7) {
     const P = t === 7 ? MEAD : GRASS, f = fbm(x / 46, y / 46, 5);
     let k = f < .38 ? 1 : f < .6 ? 2 : 3;
-    if (hash2(x, y, 7) > .965 || hash2(x, y - 1, 7) > .965) k = Math.max(0, k - 1);
-    if (hash2(x, y, 8) > .985) k = Math.min(4, k + 1);
+    if (hash2(x, y, 7) > .984 || hash2(x, y - 1, 7) > .984) k = Math.max(0, k - 1);
+    if (hash2(x, y, 8) > .994) k = Math.min(4, k + 1);
     const nb = at(x, y + 2), na = at(x, y - 2);
     if (nb === 1 || nb === 2 || nb === 8 || nb === 3) k = Math.max(0, k - 1);
     if (na === 2) k = Math.max(0, k - 1);
@@ -506,6 +613,58 @@ function drawBarrierPost(g, sx, sy) {
 function drawDecor(g, d, cx, cy, t) {
   const sx = Math.round(d.x - cx), sy = Math.round(d.y - cy);
   switch (d.kind) {
+    case 'courtyardFloor': {
+      const warm = d.theme === 'kitchen' || d.theme === 'cottage';
+      const palette = warm ? ['#77755d', '#9c9275', '#afa185', '#b9ab8d'] : ['#69736b', '#89938a', '#9da69a', '#aeb5a4'];
+      g.fillStyle = palette[0]; g.fillRect(sx, sy, d.w, d.h);
+      for (let y = 1; y < d.h - 1; y += 6) for (let x = 1 + ((y / 6 | 0) % 2) * 5; x < d.w - 1; x += 11) {
+        const w = Math.min(10, d.w - x - 1), h = Math.min(5, d.h - y - 1);
+        g.fillStyle = palette[1 + ((x / 11 | 0) + (y / 6 | 0)) % 2]; g.fillRect(sx + x, sy + y, w, h);
+        g.fillStyle = palette[3]; g.fillRect(sx + x + 1, sy + y, Math.max(1, w - 2), 1);
+      }
+      g.fillStyle = '#66725b'; g.fillRect(sx, sy + d.h, d.w, 2);
+      g.fillStyle = '#c0b798'; g.fillRect(sx + 2, sy + d.h - 2, d.w - 4, 1);
+      // Short grates make the stone edge feel built, without adding visual noise.
+      for (const x of [8, d.w - 18]) { g.fillStyle = '#596356'; g.fillRect(sx + x, sy + d.h - 6, 10, 4); g.fillStyle = '#a1a48c'; for (let i = 1; i < 9; i += 3) g.fillRect(sx + x + i, sy + d.h - 6, 1, 3); }
+      break;
+    }
+    case 'doorstep': {
+      const end = d.end - cy;
+      g.fillStyle = '#9d967c'; g.fillRect(sx - 11, sy, 23, Math.max(0, end - sy));
+      for (let y = sy + 2; y < end; y += 7) { g.fillStyle = '#c2b798'; g.fillRect(sx - 10, y, 21, 1); g.fillStyle = '#807f68'; g.fillRect(sx + (Math.floor(y / 7) % 2 ? -5 : 4), y + 1, 1, 5); }
+      g.fillStyle = '#5c695b'; g.fillRect(sx - 10, sy, 21, 7); g.fillStyle = '#a3aa8e'; g.fillRect(sx - 8, sy + 2, 17, 1); g.fillRect(sx - 8, sy + 5, 17, 1);
+      break;
+    }
+    case 'gardenSteps': {
+      for (let y = sy; y < d.end - cy; y += 11) { g.fillStyle = '#69705b'; g.fillRect(sx - 10, y + 1, 22, 7); g.fillStyle = '#aaa384'; g.fillRect(sx - 9, y, 20, 6); g.fillStyle = '#cbc0a0'; g.fillRect(sx - 8, y, 18, 1); }
+      break;
+    }
+    case 'streetEdge': {
+      for (const [dy, gaps] of [[0, d.gaps], [38, d.lowerGaps]]) for (let x = 0; x < d.w; x += 8) {
+        if (gaps.some(gate => Math.abs(d.x + x + 4 - gate) < 24)) continue;
+        g.fillStyle = '#68725b'; g.fillRect(sx + x, sy + dy + 2, 8, 3);
+        g.fillStyle = '#b1a786'; g.fillRect(sx + x, sy + dy, 7, 3); g.fillStyle = '#c7bc9c'; g.fillRect(sx + x + 1, sy + dy, 5, 1);
+        if (x % 48 === 0) { g.fillStyle = '#7b8e64'; g.fillRect(sx + x + 2, sy + dy + 4, 4, 2); }
+      }
+      break;
+    }
+    case 'festivalRibbon': {
+      const x1 = d.x1 - cx, x2 = d.x2 - cx, y = d.y - cy, lit = G.done > d.z;
+      g.fillStyle = '#665d50';
+      for (let x = x1; x <= x2; x += 2) { const f = (x - x1) / (x2 - x1); g.fillRect(Math.round(x), Math.round(y + Math.sin(f * Math.PI) * 13), 2, 1); }
+      for (let i = 0; i < 5; i++) {
+        const f = (i + .5) / 5, lx = Math.round(x1 + (x2 - x1) * f), ly = Math.round(y + Math.sin(f * Math.PI) * 13 + Math.sin(t * 1.8 + i) * .7);
+        g.fillStyle = '#665d50'; g.fillRect(lx, ly, 1, 4);
+        g.fillStyle = lit ? '#f3bd76' : '#a99178'; g.fillRect(lx - 3, ly + 4, 7, 8); g.fillRect(lx - 2, ly + 3, 5, 10);
+        g.fillStyle = lit ? '#fff2bd' : '#c4b597'; g.fillRect(lx - 1, ly + 5, 2, 6);
+        g.fillStyle = lit ? '#ba7254' : '#817063'; g.fillRect(lx - 2, ly + 3, 5, 1); g.fillRect(lx - 2, ly + 12, 5, 1); g.fillRect(lx, ly + 13, 1, 3);
+      }
+      break;
+    }
+    case 'roadstone': { const c = ['#ae9b7a', '#beac89', '#947f63'][Math.floor(d.s) % 3]; g.fillStyle = '#6b624b'; g.fillRect(sx - 3, sy, 7, 3); g.fillStyle = c; g.fillRect(sx - 2, sy - 1, 5, 3); g.fillStyle = '#d4c5a4'; g.fillRect(sx - 1, sy - 1, 3, 1); break; }
+    case 'teaSteam': { const q = (t * 5 + d.s) % 9; g.globalAlpha = (1 - q / 9) * .6; g.fillStyle = '#f4e9d2'; g.fillRect(sx + Math.round(Math.sin(t * 2)) - 1, Math.round(sy - q), 1, 3); g.globalAlpha = 1; break; }
+    case 'butterfly': { const x = Math.round(sx + Math.sin(t * .7 + d.s) * 18), y = Math.round(sy - 17 + Math.sin(t * 1.4 + d.s) * 7), wide = Math.floor(t * 7) % 2; g.fillStyle = d.c; g.fillRect(x - (wide ? 3 : 1), y - 1, wide ? 3 : 1, 3); g.fillRect(x + 1, y - 1, wide ? 3 : 1, 3); g.fillStyle = '#655064'; g.fillRect(x, y, 1, 3); break; }
+    case 'pondduck': { const x = Math.round(sx + Math.sin(t * .28 + d.s) * 14), y = Math.round(sy + Math.sin(t * .4 + d.s) * 3); g.fillStyle = '#8ac9d1'; g.fillRect(x - 10, y + 2, 18, 1); g.fillRect(x - 7, y + 4, 13, 1); const f=Math.floor(t*2)%2,base=cached('pondduck'+f,()=>makePondDuck(f)),im=Math.cos(t*.28+d.s)>0?base:cached('pondduckL'+f,()=>flipH(base)); g.drawImage(im, x - 7, y - 9, 13, 12); break; }
     case 'grass': { const w = Math.round(Math.sin(t * 2 + d.x * .05 + d.s) * 1.2); g.fillStyle = GRASS[1]; g.fillRect(sx - 2, sy - 3, 1, 3); g.fillRect(sx + 2, sy - 3, 1, 3); g.fillStyle = GRASS[3]; g.fillRect(sx + w, sy - 5, 1, 5); g.fillRect(sx - 1 + w, sy - 4, 1, 2); g.fillStyle = GRASS[4]; g.fillRect(sx + 1 + w, sy - 6, 1, 3); break; }
     case 'flower': { const w = Math.round(Math.sin(t * 2.2 + d.x * .05 + d.s) * 1); g.fillStyle = GRASS[1]; g.fillRect(sx, sy - 4, 1, 4); g.fillStyle = d.c; g.fillRect(sx - 1 + w, sy - 6, 3, 1); g.fillRect(sx + w, sy - 7, 1, 3); g.fillStyle = '#fff6c0'; g.fillRect(sx + w, sy - 6, 1, 1); break; }
     case 'glitchgrass': { if (hash2(d.x, Math.floor(t * 4), 1) > .85) break; g.fillStyle = DARK[4]; g.fillRect(sx, sy - 3, 1, 3); g.fillRect(sx + 2, sy - 2, 1, 2); g.fillStyle = '#8a4ac8'; g.fillRect(sx + 1, sy - 4, 1, 4); break; }

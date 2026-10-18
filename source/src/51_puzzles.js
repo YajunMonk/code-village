@@ -143,14 +143,14 @@ class OrderScreen extends Screen {
 }
 const NOODLE = ['撕开泡面包装', '把面饼放进碗里', '倒入开水', '盖上盖子，等 3 分钟', '开吃！'];
 const noodleCfg = () => ({
-  who: 'chef', title: '锅锅的泡面菜谱', hint: '把步骤按正确顺序排进菜谱。点菜谱里的步骤可以撤回。', items: NOODLE, go: '让锅锅开工 ▶', ok: '咕嘟咕嘟……叮！滴滴，泡面完成！',
+  who: 'chef', title: '锅锅的泡面菜谱', hint: '把步骤按正确顺序排进菜谱。点菜谱里的步骤可以撤回。', items: NOODLE, go: '让锅锅开工 ▶', ok: '咕嘟咕嘟……好了！面要趁热吃。',
   why(ans) {
     const at = s => ans.indexOf(s);
-    if (ans[0] === '开吃！') return '滴滴……锅锅第一步就开吃：对着空气嚼了半天。顺序错了，结果就错了。';
-    if (at('开吃！') < at('盖上盖子，等 3 分钟')) return '滴滴……还没泡好就开吃了。咔嚓！干面饼把锅锅的螺丝都崩掉了一颗。';
-    if (at('把面饼放进碗里') < at('撕开泡面包装')) return '滴滴……锅锅把没拆的整包泡面扔进了碗里。塑料袋泡面，嚼劲十足……';
-    if (at('倒入开水') < at('把面饼放进碗里')) return '滴滴……先往空碗里倒开水，再把面饼扔进去。啪！溅了锅锅一脸。';
-    return '滴滴……锅锅盖着盖子对着干面饼等了 3 分钟，然后才倒水。等了个寂寞。';
+    if (ans[0] === '开吃！') return '哎呀，锅锅第一步就开吃：对着空气嚼了半天。顺序错了，结果就错了。';
+    if (at('开吃！') < at('盖上盖子，等 3 分钟')) return '哎呀，还没泡好就开吃了。咔嚓！干面饼还硬邦邦的。';
+    if (at('把面饼放进碗里') < at('撕开泡面包装')) return '哎呀，锅锅把没拆的整包泡面扔进了碗里。塑料袋泡面，嚼劲十足……';
+    if (at('倒入开水') < at('把面饼放进碗里')) return '哎呀，先往空碗里倒开水，再把面饼扔进去。啪！溅了锅锅一脸。';
+    return '哎呀，锅锅盖着盖子对着干面饼等了 3 分钟，然后才倒水。等了个寂寞。';
   },
 });
 
@@ -192,7 +192,16 @@ class BattleScreen extends Screen {
     this.nav();
   }
   draw(g) {
-    const t = this.t;
+    const t = this.t, P = PORTRAIT, pw = VW - 16, px = 8;
+    const qL = wrap(this.Q.q, pw - 20), cols = P ? 1 : 3, bwid = P ? pw - 30 : Math.floor((pw - 40) / 3);
+    const mL = []; if (this.msg) this.msg.forEach(m => wrap(m, pw - 20, this.lastOk ? UIC.mint : UIC.rose).forEach(l => mL.push(l)));
+    let rowH = 24;
+    if (this.state === 'ask') {
+      this.btns.forEach(b => { b.w = bwid; b.pad = 10; b.lines = wrap(b.label, bwid - 24); b.h = Math.max(22, b.lines.length * 13 + 8); });
+      rowH = Math.max(22, ...this.btns.map(b => b.h)) + 5;
+    }
+    const ph = Math.max(P ? 130 : 96, 26 + qL.length * LH + (this.state === 'ask' ? Math.ceil(this.btns.length / cols) * rowH : mL.length * LH + 36));
+    const py = Math.max(40, VH - ph - 8);
     // 迷幻背景
     const BG = BOSS_BG[this.kind] || BOSS_BG.final;
     for (let y = 0; y < VH; y += 2) {
@@ -204,8 +213,8 @@ class BattleScreen extends Screen {
     }
     g.fillStyle = 'rgba(10,4,20,.35)'; g.fillRect(0, 0, VW, VH);
     // 魔王
-    const P = PORTRAIT, sc = P && VW >= 250 ? 3 : 2, bw = 66 * sc, bh = 58 * sc;
-    this.bossY = P ? Math.round(VH * .12) : 30;
+    const maxSc = P && VW >= 250 ? 3 : 2, sc = Math.max(1, Math.min(maxSc, Math.floor((py - 38) / 58))), bw = 66 * sc, bh = 58 * sc;
+    this.bossY = Math.max(28, Math.round((py - bh) / 2));
     const by = this.bossY + Math.round(Math.sin(t * 2) * 3) + (this.intro > 0 ? Math.round(easeOut(this.intro / 1.2) * -120) : 0);
     const hurt = this.hitT > 0 && Math.floor(this.hitT * 20) % 2;
     let im = bossFrame(Math.floor(t * 4) % 4, !!hurt, this.kind);
@@ -220,23 +229,20 @@ class BattleScreen extends Screen {
     g.restore();
     this.dmg.forEach(d => txt(g, d.text, VW / 2 + 40, by + 20 - d.t * 30, '#ffffff', { align: 'center' }));
     // 血条
-    const hx = Math.round(VW / 2 - 70), hy = P ? Math.round(VH * .12) - 34 : 4;
+    const hx = Math.round(VW / 2 - 70), hy = 4;
     const maxHp = this.cfg.hp || 5, nw = textW(this.cfg.name), bw2 = nw + 22 + maxHp * 14, hx2 = Math.round(VW / 2 - bw2 / 2);
     win(g, hx2, hy, bw2, 20, 'dark'); txt(g, this.cfg.name, hx2 + 8, hy + 4, BG[2]);
     for (let i = 0; i < maxHp; i++) { const bx = hx2 + nw + 14 + i * 14; g.fillStyle = '#1a0a1a'; g.fillRect(bx, hy + 6, 12, 8); g.fillStyle = i < this.hp ? '#ff3b6b' : '#3a2a44'; g.fillRect(bx + 1, hy + 7, 10, 6); if (i < this.hp) { g.fillStyle = '#ffa0b8'; g.fillRect(bx + 1, hy + 7, 10, 1); } }
     if (this.intro > 0) return;
     // 下方面板
-    const pw = VW - 16, ph = P ? 150 : 104, px = 8, py = VH - ph - 8;
     win(g, px, py, pw, ph, 'dlg');
     for (let i = 0; i < 3; i++) g.drawImage(cached('heart' + (i < this.hearts), () => makeHeart(i < this.hearts)), px + 8 + i * 13, py - 14);
     txt(g, '你', px + 50, py - 15, UIC.text);
     if (this.state === 'dying') { txt(g, this.cfg.name + '倒下了……', VW / 2, py + ph / 2 - 6, UIC.gold, { align: 'center' }); return; }
-    const qL = wrap(this.Q.q, pw - 20); drawLines(g, qL, px + 10, py + 8);
+    drawLines(g, qL, px + 10, py + 8);
     if (this.state === 'ask') {
-      const cols = P ? 1 : 3, bwid = P ? pw - 30 : Math.floor((pw - 40) / 3);
-      this.btns.forEach((b, i) => { b.w = bwid; b.x = px + 14 + (i % cols) * (bwid + 6); b.y = py + 10 + qL.length * LH + 6 + Math.floor(i / cols) * 24; });
+      this.btns.forEach((b, i) => { b.x = px + 14 + (i % cols) * (bwid + 6); b.y = py + 10 + qL.length * LH + 6 + Math.floor(i / cols) * rowH; });
     } else if (this.msg) {
-      const mL = []; this.msg.forEach(m => wrap(m, pw - 20, this.lastOk ? UIC.mint : UIC.rose).forEach(l => mL.push(l)));
       drawLines(g, mL, px + 10, py + 10 + qL.length * LH + 4);
       this.btns.forEach(b => { b.x = px + pw - b.w - 10; b.y = py + ph - 26; });
     }
@@ -247,7 +253,7 @@ class BattleScreen extends Screen {
 /* ---------- 终端 ---------- */
 class TerminalScreen extends Screen {
   constructor(title = '终端 — 发射场') {
-    super(); this.title = title; this.out = [{ s: '欢迎使用终端。输入命令后按回车。', c: '#6f8a7a' }]; this.fails = 0; this.doneT = -1;
+    super(); this.title = title; this.out = [{ s: '发射练习终端：提交已保存，自动部署已配置。', c: '#6f8a7a' }, { s: '这里模拟推送，不会操作你电脑上的仓库。', c: '#6f8a7a' }]; this.fails = 0; this.doneT = -1;
     this.inp = $('#tin'); this.inp.value = '';
     this.onKey = e => { if (e.key === 'Enter') { e.preventDefault(); this.submit(); } else Audio.sfx('key'); };
     this.inp.addEventListener('keydown', this.onKey);
@@ -262,9 +268,11 @@ class TerminalScreen extends Screen {
     const cmd = raw.trim().replace(/\s+/g, ' ');
     this.out.push({ s: '$ ' + raw, c: '#c8ffd8' });
     if (!cmd) return;
-    if (cmd.toLowerCase() === 'git push') {
+    if (cmd === 'git status') { this.out.push({ s: '当前分支 main；工作区干净，等待推送。', c: '#c8ffd8' }); return; }
+    if (cmd === 'help') { this.out.push({ s: '本练习：git status 查看状态；git push 推送。', c: '#c8ffd8' }); return; }
+    if (cmd === 'git push') {
       this.doneT = 0; this.inp.blur(); this.inp.style.display = 'none';
-      const L = [['正在打包你的代码…… 100%', '#6f8a7a'], ['正在上传到云端…… 100%', '#6f8a7a'], ['To github.com:xiaobai/duckduck-app.git', '#c8ffd8'], ['   3f2a1c9..8e7d6b5  main -> main', '#c8ffd8'], ['推送成功！', '#7dffa6'], ['已触发自动部署：鸭鸭点餐 v1.0 正在发射……', '#7dffa6']];
+      const L = [['正在上传提交…… 100%', '#6f8a7a'], ['模拟远端：星灯镇 / duckduck-app.git', '#c8ffd8'], ['   3f2a1c9..8e7d6b5  main -> main', '#c8ffd8'], ['推送成功！', '#7dffa6'], ['部署流水线：构建通过，发布通过。', '#7dffa6'], ['下一步：打开正式网址，验证试单。', '#ffd23f']];
       for (const [s, c] of L) { await wait(380); this.out.push({ s, c }); Audio.sfx('key'); }
       Audio.sfx('jingle');
       this.btns = [new Btn({ label: '好耶 ▶', w: 96, h: 20, style: 'primary', onPress: () => this.close() })]; this.focus = 0;
@@ -272,8 +280,8 @@ class TerminalScreen extends Screen {
     }
     this.fails++; Audio.sfx('bad');
     const word = cmd.split(' ')[0];
-    if (word.toLowerCase() === 'git') this.out.push({ s: `git: '${cmd.slice(4)}' 不是一个 git 命令。（差一点！检查一下拼写）`, c: '#ff8a9a' });
-    else this.out.push({ s: `command not found: ${word}（终端看不懂。它只认准确的命令，错一个字母都不行）`, c: '#ff8a9a' });
+    if (/^(git|npm|ls|cd)$/i.test(word)) this.out.push({ s: '本练习只模拟 git status 和 git push。请检查命令与大小写。', c: '#ff8a9a' });
+    else this.out.push({ s: `未识别：${word}。输入 help 查看本练习支持的命令。`, c: '#ff8a9a' });
     if (this.fails >= 2) this.out.push({ s: '提示：英文小写，git 和 push 中间有一个空格。', c: '#6f8a7a' });
   }
   update(dt) { this.t += dt; if (this.doneT >= 0) this.doneT += dt; if (Input.pointer.click && this.doneT < 0) this.focusInput(); this.nav(); }

@@ -1,0 +1,245 @@
+{
+  "version": 1,
+  "coordinateSpace": "full image normalized; x=left to right, y=top to bottom; manual visual estimates after inspecting generated PNGs",
+  "imageSize": {
+    "width": 1672,
+    "height": 941
+  },
+  "renderingNote": "Use contain/no crop for interactive room background, or apply the exact image transform to every hotspot. Coordinates refer to actual image, not viewport.",
+  "rooms": {
+    "observatory": {
+      "asset": "room-observatory.png",
+      "entrance": {
+        "x": 0.5,
+        "y": 0.91
+      },
+      "safeStandingArea": {
+        "left": 0.23,
+        "top": 0.56,
+        "right": 0.72,
+        "bottom": 0.8
+      },
+      "hotspots": [
+        {
+          "id": "chalkboard",
+          "label": "天体黑板",
+          "x": 0.173,
+          "y": 0.197,
+          "rx": 0.1,
+          "ry": 0.13
+        },
+        {
+          "id": "teacup",
+          "label": "书桌茶杯",
+          "x": 0.538,
+          "y": 0.308,
+          "rx": 0.025,
+          "ry": 0.035
+        },
+        {
+          "id": "telescope",
+          "label": "黄铜望远镜",
+          "x": 0.838,
+          "y": 0.176,
+          "rx": 0.08,
+          "ry": 0.08
+        }
+      ]
+    },
+    "studio": {
+      "asset": "room-studio.png",
+      "entrance": {
+        "x": 0.5,
+        "y": 0.91
+      },
+      "safeStandingArea": {
+        "left": 0.23,
+        "top": 0.56,
+        "right": 0.72,
+        "bottom": 0.8
+      },
+      "hotspots": [
+        {
+          "id": "prototype",
+          "label": "木制样机",
+          "x": 0.48,
+          "y": 0.256,
+          "rx": 0.025,
+          "ry": 0.035
+        },
+        {
+          "id": "record",
+          "label": "黑胶唱片机",
+          "x": 0.093,
+          "y": 0.403,
+          "rx": 0.05,
+          "ry": 0.06
+        },
+        {
+          "id": "apple",
+          "label": "苹果与设计稿",
+          "x": 0.884,
+          "y": 0.377,
+          "rx": 0.035,
+          "ry": 0.05
+        }
+      ]
+    },
+    "postoffice": {
+      "asset": "room-postoffice.png",
+      "entrance": {
+        "x": 0.5,
+        "y": 0.91
+      },
+      "safeStandingArea": {
+        "left": 0.23,
+        "top": 0.56,
+        "right": 0.72,
+        "bottom": 0.8
+      },
+      "hotspots": [
+        {
+          "id": "routemap",
+          "label": "小镇路线图",
+          "x": 0.114,
+          "y": 0.214,
+          "rx": 0.08,
+          "ry": 0.13
+        },
+        {
+          "id": "sealedletter",
+          "label": "红蜡封信",
+          "x": 0.526,
+          "y": 0.323,
+          "rx": 0.025,
+          "ry": 0.03
+        },
+        {
+          "id": "satchel",
+          "label": "邮差挎包",
+          "x": 0.832,
+          "y": 0.405,
+          "rx": 0.04,
+          "ry": 0.06
+        }
+      ]
+    },
+    "cafe": {
+      "asset": "room-cafe.png",
+      "entrance": {
+        "x": 0.5,
+        "y": 0.91
+      },
+      "safeStandingArea": {
+        "left": 0.23,
+        "top": 0.54,
+        "right": 0.72,
+        "bottom": 0.8
+      },
+      "hotspots": [
+        {
+          "id": "menu",
+          "label": "旧菜单板",
+          "x": 0.384,
+          "y": 0.113,
+          "rx": 0.12,
+          "ry": 0.08
+        },
+        {
+          "id": "osmanthus",
+          "label": "桂花茶罐",
+          "x": 0.534,
+          "y": 0.302,
+          "rx": 0.04,
+          "ry": 0.06
+        },
+        {
+          "id": "letter",
+          "label": "星封信",
+          "x": 0.869,
+          "y": 0.621,
+          "rx": 0.035,
+          "ry": 0.035
+        }
+      ]
+    },
+    "library": {
+      "asset": "room-library.png",
+      "entrance": {
+        "x": 0.5,
+        "y": 0.91
+      },
+      "safeStandingArea": {
+        "left": 0.23,
+        "top": 0.54,
+        "right": 0.72,
+        "bottom": 0.8
+      },
+      "hotspots": [
+        {
+          "id": "notebook",
+          "label": "旧菜单笔记",
+          "x": 0.44,
+          "y": 0.321,
+          "rx": 0.035,
+          "ry": 0.035
+        },
+        {
+          "id": "photo",
+          "label": "老照片",
+          "x": 0.783,
+          "y": 0.411,
+          "rx": 0.025,
+          "ry": 0.04
+        },
+        {
+          "id": "star",
+          "label": "星灯半成品",
+          "x": 0.129,
+          "y": 0.501,
+          "rx": 0.04,
+          "ry": 0.055
+        }
+      ]
+    },
+    "workshop": {
+      "asset": "room-workshop.png",
+      "entrance": {
+        "x": 0.5,
+        "y": 0.91
+      },
+      "safeStandingArea": {
+        "left": 0.23,
+        "top": 0.54,
+        "right": 0.72,
+        "bottom": 0.8
+      },
+      "hotspots": [
+        {
+          "id": "core",
+          "label": "星灯核心",
+          "x": 0.513,
+          "y": 0.25,
+          "rx": 0.035,
+          "ry": 0.055
+        },
+        {
+          "id": "toolbox",
+          "label": "工具箱",
+          "x": 0.074,
+          "y": 0.468,
+          "rx": 0.06,
+          "ry": 0.07
+        },
+        {
+          "id": "blueprint",
+          "label": "线路图",
+          "x": 0.837,
+          "y": 0.486,
+          "rx": 0.07,
+          "ry": 0.065
+        }
+      ]
+    }
+  }
+}

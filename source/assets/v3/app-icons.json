@@ -1,0 +1,22 @@
+{
+  "favicon": {
+    "source": "v3/app-icon-xa-32.png",
+    "rel": "icon",
+    "sizes": "32x32"
+  },
+  "apple-touch": {
+    "source": "v3/app-icon-xa-180.png",
+    "rel": "apple-touch-icon",
+    "sizes": "180x180"
+  },
+  "app-192": {
+    "source": "v3/app-icon-xa-192.png",
+    "rel": "icon",
+    "sizes": "192x192"
+  },
+  "app-512": {
+    "source": "v3/app-icon-xa-512.png",
+    "rel": "icon",
+    "sizes": "512x512"
+  }
+}

@@ -61,12 +61,42 @@ Object.assign(CHAR, {
   iceKid: { style: 'cap', hair: ['#2a6aa8', '#4a9ae0', '#8ac8ff'], hairUnder: '#2a1a10', shirt: ['#2a6aa8', '#4a9ae0', '#8ac8ff'], pants: ['#2a3050', '#3a4470'], short: true },
 });
 
+/* 职业从侧面和背面也能辨认，避免村民一转身就变成同一件衣服。 */
+Object.assign(CHAR.pm, { skin: ['#a66b54', '#ce9272', '#eab38b'],
+  bodySide(A, y) { A.R(3, y + 3, 4, 5, '#e4d2ac'); A.R(4, y + 3, 3, 1, '#ab645b'); A.P(4, y + 5, '#6b6d72'); },
+  bodyBack(A, y) { A.R(4, y + 5, 8, 1, '#1e6a6a'); A.R(7, y + 1, 2, 2, '#69c4b4'); }
+});
+Object.assign(CHAR.builder, { skin: ['#a56e4f', '#cb9873', '#e8bb8e'], shoes: '#684b38',
+  bodySide(A, y) { A.R(4, y + 3, 6, 1, '#e8e9a5'); A.R(6, y + 6, 6, 1, '#654d36'); A.R(10, y + 5, 2, 3, '#77858c'); },
+  bodyBack(A, y) { A.R(4, y + 3, 8, 1, '#e8e9a5'); A.R(4, y + 6, 8, 1, '#654d36'); A.R(5, y + 5, 2, 3, '#8d6947'); }
+});
+Object.assign(CHAR.prof, {
+  bodySide(A, y) { A.R(9, y + 3, 3, 4, '#a9c1c8'); A.P(10, y + 2, '#dc8794'); A.P(11, y + 2, '#72bfc7'); },
+  bodyBack(A, y) { A.R(4, y + 5, 8, 1, '#c8d3dc'); A.R(7, y + 6, 1, 2, '#a8b6c8'); }
+});
+Object.assign(CHAR.postman, { skin: ['#b1785d', '#dea47b', '#f3c89b'],
+  bodySide(A, y) { A.R(9, y + 2, 5, 6, '#9c704b'); A.R(9, y + 2, 5, 2, '#d0a776'); A.P(11, y + 5, '#e8d5a5'); },
+  bodyBack(A, y) { A.L(4, y, 11, y + 7, '#d0a776'); A.R(8, y + 5, 5, 3, '#9c704b'); }
+});
+Object.assign(CHAR.zero, { skin: ['#9c674f', '#c48c68', '#e1ad82'],
+  bodySide(A, y) { A.R(3, y + 3, 4, 5, '#c6a167'); A.R(4, y + 4, 2, 3, '#f2e2b9'); },
+  bodyBack(A, y) { A.R(3, y + 1, 10, 7, '#886c55'); A.R(4, y + 1, 8, 2, '#b59670'); A.P(7, y + 4, '#edd69d'); }
+});
+Object.assign(CHAR.granny, {
+  bodySide(A, y) { A.R(4, y + 1, 6, 2, '#d6b9d6'); A.P(5, y + 4, '#f2d27a'); },
+  bodyBack(A, y) { A.R(3, y, 10, 3, '#d6b9d6'); A.R(5, y + 3, 6, 1, '#b18dbb'); }
+});
+Object.assign(CHAR.detective, {
+  bodySide(A, y) { A.R(4, y + 1, 8, 2, '#b88c62'); A.R(5, y + 6, 7, 1, '#5c4434'); },
+  bodyBack(A, y) { A.R(3, y, 10, 3, '#b88c62'); A.R(4, y + 6, 8, 1, '#5c4434'); A.R(7, y + 6, 2, 1, '#c4ab77'); }
+});
+
 /* ---------- 小 A：AI 实习生 ---------- */
 function makeXA(f = 0, talk = 0, mood = 'ok') {
   return spr(16, 20, A => {
     const { R, E, P } = A; const b = f ? 1 : 0;
-    const w = ['#9aa6c4', '#dfe6f4', '#ffffff'];
-    P(8, 0 + b, f ? '#ff4a6a' : '#ffd23f'); R(8, 1 + b, 1, 2, '#6a7090');
+    const w = ['#b7a88e', '#eee1c3', '#fff4d9'];
+    P(11, 0 + b, '#7bc9bd'); R(11, 1 + b, 1, 2, '#a78a59');
     R(2, 3 + b, 13, 10, w[1]); R(3, 2 + b, 11, 1, w[1]); R(3, 13 + b, 11, 1, w[0]); R(2, 3 + b, 1, 9, w[2]); R(14, 4 + b, 1, 9, w[0]);
     R(4, 5 + b, 9, 6, '#1a2440'); R(4, 5 + b, 9, 1, '#2a3660');
     const e = '#5af0ff';
@@ -74,21 +104,25 @@ function makeXA(f = 0, talk = 0, mood = 'ok') {
     else if (mood === 'dizzy') { P(5, 7 + b, e); P(7, 7 + b, e); P(6, 8 + b, e); P(5, 9 + b, e); P(7, 9 + b, e); P(9, 7 + b, e); P(11, 7 + b, e); P(10, 8 + b, e); P(9, 9 + b, e); P(11, 9 + b, e); }
     else { R(5, 7 + b, 2, 2, e); R(10, 7 + b, 2, 2, e); P(5, 7 + b, '#d8ffff'); P(10, 7 + b, '#d8ffff'); }
     if (talk) R(7, 10 + b, 3, 1, e);
-    P(3, 9 + b, '#ff9ab0'); P(13, 9 + b, '#ff9ab0');
+    P(3, 9 + b, '#df9b7d'); P(13, 9 + b, '#df9b7d');
+    R(0,6+b,2,5,'#9b784d');R(0,7+b,1,3,'#80bcb0');R(15,6+b,1,5,'#4f9389');P(15,7+b,'#91cdbb');
     R(5, 14 + b, 7, 3, w[1]); R(5, 16 + b, 7, 1, w[0]); R(7, 15 + b, 3, 1, '#5af0ff');
     R(3, 14 + b, 2, 2, w[0]); R(12, 14 + b, 2, 2, w[0]);
+    R(5,13+b,7,1,'#3f766c');R(6,14+b,5,1,'#65a292');R(8,15+b,2,1,'#3f766c');
     E(8.5, 18.5 + b, 2.5, 1, f ? '#7af8ff' : '#5ad1ff');
   });
 }
 /* ---------- 蜗牛小步 ---------- */
 function makeSnail(f = 0, talk = 0) {
-  return spr(18, 15, A => {
-    const { R, E, P } = A; const s = ['#a8501a', '#e07a2a', '#ffb060'], b = ['#7aa83a', '#a8d85a', '#d8f08a'];
-    R(1, 11, 16, 3, b[1]); R(1, 13, 16, 1, b[0]); R(13, 6, 4, 6, b[1]); R(14, 6, 2, 1, b[2]);
-    R(14, 2 + (f ? 1 : 0), 1, 4, b[0]); R(16, 2, 1, 4, b[0]); P(14, 1 + (f ? 1 : 0), C.ink); P(16, 1, C.ink);
-    P(15, 8, C.ink); if (talk) R(15, 10, 2, 1, C.mouth); else P(16, 10, C.mouth);
-    E(7, 7, 6, 5.5, s[1]);
-    for (let y = 1; y < 13; y++) for (let x = 1; x < 14; x++) if (A.G(x, y) === s[1]) { const d = Math.hypot(x - 7, y - 7), a = Math.atan2(y - 7, x - 7); if (Math.abs(((d - a * 1.1) % 3.2 + 3.2) % 3.2) < .9) P(x, y, s[0]); else if (x + y < 10) P(x, y, s[2]); }
+  return spr(24, 22, A => {
+    const {R,E,P,L}=A,b=f?1:0;
+    E(12,19,11.5,2.7,'#a9bd78');R(2,20,21,1,'#7d985a');R(15,11+b,7,8-b,'#a9bd78');R(19,13+b,3,6-b,'#d3d39c');
+    R(16,6+b,2,7,'#8da467');R(21,5,2,7,'#8da467');
+    for(const [x,y]of[[17,5+b],[22,4]]){E(x,y,2.3,3.1,'#dce0ad');E(x+.5,y+.3,1.4,2,'#4d3b32');P(x,y-1,'#fff0cf');}
+    E(8,13,7.5,7.3,'#b98653');E(8,13,6.3,6.1,'#cb9b65');L(4,8,10,7,'#e2b67b');
+    L(11,8,13,12,'#94613e');L(13,12,12,16,'#94613e');L(12,16,8,18,'#94613e');L(8,18,4,15,'#94613e');L(4,15,4,11,'#94613e');L(4,11,8,10,'#94613e');L(8,10,10,12,'#94613e');L(10,12,9,15,'#94613e');L(9,15,7,14,'#94613e');P(7,13,'#94613e');
+    P(16,13+b,'#d1d69b');P(22,13+b,'#bfcc8b');R(18,14+b,talk?3:2,talk?2:1,'#966c4b');P(16,14+b,'#d0a170');
+    L(8,6,9,2,'#708b4b');E(7,4,2.4,1.4,'#a6b66e');E(10,3,2.4,1.4,'#8fa45c');P(8,4,'#d0d38e');
   });
 }
 
@@ -229,7 +263,32 @@ function makeStall(c) {
     R(8, 19, 6, 5, '#ff8c3a'); R(9, 18, 4, 1, '#5ad06a'); R(18, 20, 8, 4, '#e8e8f0'); R(19, 20, 6, 1, '#ffd23f'); R(30, 19, 7, 5, '#c98e57'); R(31, 19, 5, 1, '#e8b078');
   });
 }
+/* 院落矮景：石沿承托土层，叶团和花簇成片；都以无碰撞装饰使用。 */
+function buildCourtyardProps() {
+  for (const [key, blooms] of [['yardFlowers', ['#d5a196', '#e8c990', '#aebbb7']], ['yardHerbs', ['#8fa680', '#b7c495', '#78927c']]]) {
+    PROP[key] = spr(38, 20, A => {
+      A.R(1, 13, 36, 6, '#666755'); A.R(2, 12, 34, 3, '#a09c7c'); A.R(3, 12, 32, 2, '#5c5543');
+      A.R(2, 18, 34, 2, '#4c5848'); A.R(3, 15, 32, 2, '#9c987c');
+      for (let x = 3; x < 36; x += 8) { A.R(x, 15, 6, 1, '#bbb296'); A.P(x + 6, 17, '#646c57'); }
+      for (let i = 0; i < 6; i++) {
+        const x = 5 + i * 5, y = 8 + (i % 3 === 1 ? -3 : 0);
+        A.R(x, y, 1, 6, '#49644f'); A.E(x - 2, y + 3, 3, 2, '#607c58'); A.E(x + 2, y + 1, 3, 2, '#8ba373');
+        A.R(x - 2, y - 3, 5, 3, blooms[i % 3]); A.R(x - 1, y - 4, 3, 5, blooms[i % 3]);
+        A.P(x - 1, y - 3, key === 'yardHerbs' ? '#cad1a0' : '#f2deae'); A.P(x + 2, y - 1, '#71896a');
+      }
+    });
+  }
+  PROP.yardFence = spr(34, 12, A => {
+    A.R(1, 4, 32, 2, '#8a7960'); A.R(1, 8, 32, 2, '#706450'); A.R(1, 4, 32, 1, '#bdac8b');
+    [1, 9, 17, 25, 31].forEach((x, i) => { const y = i % 2 ? 1 : 0; A.R(x, y + 1, 2, 11 - y, '#a49373'); A.P(x, y, '#d0bea0'); A.P(x, 5, '#665e4f'); });
+  });
+  PROP.yardSideFence = spr(8, 31, A => {
+    A.R(3, 3, 2, 27, '#756d55'); A.R(2, 3, 1, 27, '#b4a180');
+    for (let y = 1; y < 31; y += 8) { A.R(1, y, 3, 7, '#97856b'); A.R(0, y, 5, 1, '#c6b593'); A.P(2, y + 5, '#655e4e'); }
+  });
+}
 function buildProps3() {
+  buildCourtyardProps();
   PROP.board = spr(32, 28, A => { A.R(3, 14, 2, 14, BARK[1]); A.R(27, 14, 2, 14, BARK[1]); A.R(0, 0, 32, 20, BARK[2]); A.R(2, 2, 28, 16, '#c8925a'); for (let i = 0; i < 6; i++) { const x = 4 + (i % 3) * 9, y = 3 + Math.floor(i / 3) * 8, c = ['#fff27a', '#ff9ab8', '#8ae0ff', '#a8f08a', '#fff27a', '#ffb060'][i]; A.R(x, y, 7, 6, c); A.R(x + 1, y + 2, 4, 1, shade(c, .6)); A.P(x + 3, y, '#e04848'); } });
   PROP.stallR = makeStall('#e05a5a'); PROP.stallB = makeStall('#4a8ae0'); PROP.stallG = makeStall('#4ab06a');
   PROP.easel = spr(18, 28, A => { A.L(4, 27, 8, 4, BARK[1]); A.L(13, 27, 9, 4, BARK[1]); A.R(8, 10, 2, 18, BARK[0]); A.R(1, 4, 16, 14, '#ffffff'); A.R(2, 5, 14, 12, '#bfe6ff'); A.R(2, 12, 14, 5, '#7ac860'); A.E(12, 8, 2, 2, '#ffd23f'); A.R(4, 9, 4, 4, '#e05a5a'); A.R(0, 17, 18, 2, BARK[2]); });
@@ -258,3 +317,162 @@ function buildProps3() {
   PROP.grave404 = spr(18, 22, A => { A.R(8, 10, 2, 12, '#3a3446'); A.R(0, 0, 18, 11, '#5a6a9a'); A.R(1, 1, 16, 9, '#2a3460'); [DIGITS[4], DIGITS[0], DIGITS[4]].forEach((g, i) => g.forEach((row, ry) => row.split('').forEach((v, rx) => { if (v === '1') A.P(3 + i * 4 + rx, 3 + ry, '#8ac8ff'); }))); });
   PROP.server2 = spr(36, 34, A => { for (let i = 0; i < 2; i++) { const x = i * 18; A.R(x, 0, 16, 34, '#2a2e3e'); A.R(x, 0, 16, 2, '#4a4e66'); for (let y = 3; y < 32; y += 5) { A.R(x + 2, y, 12, 4, '#3a3e52'); A.P(x + 4, y + 1, '#5ad06a'); A.P(x + 6, y + 1, '#5ad1ff'); } } });
 }
+
+/* ---------- 星灯镇原创居民：全身角色与四向职业轮廓 ---------- */
+Object.assign(hairStyles, {
+  curly(A, y, dir, h) {
+    hairStyles.short(A, y, dir, h);
+    [[3, 0], [6, -1], [9, -1], [12, 0], [2, 3], [13, 3]].forEach(([x, dy], i) => {
+      A.E(x + .5, y + dy, 2, 1.6, h[1]); A.P(x, y + dy - 1, i % 2 ? h[2] : h[1]); A.P(x + 1, y + dy, h[0]);
+    });
+    if (dir === 1) { A.P(5, y + 7, h[0]); A.P(9, y + 8, h[2]); A.P(12, y + 6, h[0]); }
+  },
+  braid(A, y, dir, h) {
+    hairStyles.short(A, y, dir, h);
+    const x = dir === 2 ? 12 : dir === 1 ? 9 : 12;
+    for (let i = 0; i < 12; i++) { const xx = x + (Math.floor(i / 2) % 2); A.R(xx, y + 5 + i, 2, 1, h[1]); A.P(xx, y + 5 + i, i % 2 ? h[0] : h[2]); }
+    A.R(x + 1, y + 17, 2, 1, '#b66f64'); A.P(x + 1, y + 18, h[0]);
+  },
+  cycle(A, y, dir, h, o) {
+    hairStyles.short(A, y + 1, dir, o.hairUnder);
+    A.R(3, y - 2, 10, 4, h[1]); A.R(4, y - 3, 8, 1, h[1]); A.R(4, y - 2, 7, 1, h[2]); A.R(2, y + 2, 12, 1, h[0]);
+    for (const x of [5, 8, 11]) A.R(x, y - 1, 1, 2, h[0]);
+    if (dir !== 1) { A.R(3, y + 4, 1, 5, '#594a3d'); A.R(12, y + 4, 1, 5, '#594a3d'); }
+  },
+});
+Object.assign(CHAR, {
+  resident_puhe: { style: 'inventor', hair: ['#96948b', '#d9d4c1', '#fff1d9'], shirt: ['#3f574e', '#6d8775', '#a2b29a'], pants: ['#59584f', '#837e69'], shoes: '#725a42', beard: '#e6dfca', fullBeard: true, brows: '#b6b1a1',
+    body(A, y) { A.R(5, y, 6, 2, '#ded0ac'); A.R(8, y + 2, 2, 4, '#c5b68f'); A.R(5, y + 4, 2, 2, '#39565c'); A.R(10, y + 5, 3, 3, '#c9a054'); A.P(11, y + 5, '#f2d58e'); },
+    bodyBack(A, y) { A.R(5, y, 6, 1, '#ded0ac'); A.R(4, y + 5, 8, 1, '#577874'); },
+    bodySide(A, y) { A.R(4, y + 1, 4, 1, '#ded0ac'); A.R(8, y + 5, 4, 3, '#c9a054'); A.P(9, y + 5, '#f2d58e'); } },
+  resident_ali: { style: 'coils', hair: ['#402927', '#624031', '#94613e'], skin: ['#985b3e', '#c88a5d', '#e3ac79'], shirt: ['#b48142', '#e2b46d', '#f1d095'], pants: ['#8a4b3e', '#bf7150'], shoes: '#654631', freckles: true,
+    body(A, y) { A.R(5, y + 1, 1, 6, '#a16952'); A.R(10, y + 1, 1, 6, '#a16952'); A.R(5, y + 3, 6, 4, '#a16952'); A.R(6, y + 4, 4, 2, '#7e5145'); A.P(5, y + 2, '#e2bd75'); A.P(10, y + 2, '#e2bd75'); },
+    bodySide(A, y) { A.R(7, y, 1, 7, '#a16952'); A.E(5, y + 5, 2, 2, '#a9c5b7'); A.R(5, y + 6, 1, 2, '#6c5944'); },
+    bodyBack(A, y) { A.L(5, y, 10, y + 5, '#a16952'); A.L(10, y, 5, y + 5, '#a16952'); A.R(5, y + 5, 6, 2, '#a16952'); } },
+  resident_baiyu: { style: 'asymCrop', hair: ['#24262c', '#41404b', '#70636a'], shirt: ['#283238', '#3d4b51', '#65787a'], pants: ['#394f60', '#657e8a'], shoes: '#5b4b3d',
+    body(A, y) { A.R(5, y, 6, 2, '#263438'); A.R(5, y + 3, 6, 5, '#46666b'); A.R(5, y + 1, 1, 3, '#ab8c5a'); A.R(10, y + 1, 1, 3, '#ab8c5a'); A.R(12, y + 2, 1, 6, '#c9ad7a'); A.P(12, y + 4, '#6a5c44'); },
+    bodySide(A, y) { A.R(6, y, 5, 1, '#263438'); A.R(4, y + 3, 1, 5, '#c9ad7a'); },
+    bodyBack(A, y) { A.R(5, y, 6, 2, '#263438'); A.R(4, y + 6, 8, 1, '#263438'); } },
+  resident_huiqing: { style: 'workCurls', hair: ['#525d56', '#879080', '#b7b6a0'], skin: ['#97583f', '#bd8057', '#e0a775'], shirt: ['#243e54', '#4b657a', '#8399a5'], pants: ['#2c4254', '#506579'], shoes: '#5c4335',
+    body(A, y) { A.R(4, y + 6, 8, 1, '#b47e4e'); A.R(11, y + 1, 2, 6, '#d48a4e'); A.R(12, y + 1, 1, 5, '#edb268'); A.R(5, y + 5, 2, 3, '#d1985c'); A.P(5, y + 1, '#bfc6b5'); A.R(9, y + 2, 2, 1, '#a1b8b4'); },
+    bodySide(A, y) { A.R(4, y + 6, 8, 1, '#b47e4e'); A.R(9, y + 4, 2, 4, '#6d8586'); A.P(9, y + 4, '#cbd5b9'); },
+    bodyBack(A, y) { A.R(4, y + 6, 8, 1, '#b47e4e'); A.R(5, y + 2, 6, 2, '#344b5d'); A.P(7, y + 2, '#adc4b9'); } },
+  resident_shenmai: { style: 'sideBun', hair: ['#503631', '#795344', '#ae8060'], shirt: ['#4a3c60', '#796387', '#b198ab'], robe: true, trim: '#d2b47c', shoes: '#55403a',
+    body(A, y) { A.R(5, y, 6, 1, '#e3d4b6'); A.R(7, y + 1, 2, 3, '#a78d74'); A.R(9, y + 4, 4, 4, '#657e76'); A.R(10, y + 4, 2, 3, '#ded0ac'); A.R(5, y + 3, 1, 3, '#d2ae6f'); },
+    bodySide(A, y) { A.R(4, y + 4, 4, 4, '#657e76'); A.R(5, y + 4, 2, 3, '#ded0ac'); },
+    bodyBack(A, y) { A.R(5, y, 6, 2, '#a8949f'); A.R(7, y + 3, 2, 1, '#d0b184'); } },
+  resident_yuanshu: { style: 'bald', hair: ['#b2b0a2', '#e7dfcc', '#fff1d8'], skin: ['#ad7153', '#d5a071', '#ebbd8e'], shirt: ['#866849', '#bd9c72', '#e4c79a'], pants: ['#544a40', '#80715b'], beard: '#f0e8d5', brows: '#d7cfba', eyes: 'glasses', glassC: '#806044', wide: true,
+    body(A, y) { A.R(4, y + 1, 3, 6, '#765842'); A.R(9, y + 1, 3, 6, '#765842'); A.P(10, y + 2, '#d0b47b'); A.P(10, y + 4, '#d0b47b'); A.R(4, y + 5, 3, 1, '#b18b5c'); A.R(9, y + 5, 3, 1, '#b18b5c'); },
+    bodySide(A, y) { A.R(10, y + 1, 3, 6, '#765842'); A.R(5, y + 2, 3, 1, '#796e55'); A.R(5, y + 4, 3, 1, '#796e55'); },
+    bodyBack(A, y) { A.R(4, y + 1, 8, 6, '#765842'); A.R(5, y + 5, 6, 1, '#b18b5c'); } },
+  resident_zhixia: { style: 'scarfBraid', hair: ['#392b29', '#5e4436', '#92704e'], shirt: ['#7e8e74', '#b2bba0', '#e0ddbd'], pants: ['#334e69', '#5a748a'], shoes: '#6e503d', freckles: true,
+    body(A, y) { A.R(5, y, 1, 7, '#4a6782'); A.R(10, y, 1, 7, '#4a6782'); A.R(5, y + 3, 6, 5, '#4a6782'); A.R(6, y + 5, 4, 2, '#ad6860'); A.P(7, y + 5, '#dfc4a4'); },
+    bodySide(A, y) { A.R(5, y + 2, 2, 6, '#4a6782'); A.R(6, y + 6, 3, 2, '#ad6860'); },
+    bodyBack(A, y) { A.L(5, y, 10, y + 6, '#4a6782'); A.L(10, y, 5, y + 6, '#4a6782'); A.R(4, y + 6, 8, 1, '#4a6782'); } },
+  resident_guancheng: { style: 'rider', hair: ['#9f6737', '#e9a64a', '#ffd181'], hairUnder: ['#27262c', '#463a32', '#6c5441'], skin: ['#9b603f', '#c58a5d', '#e4b384'], shirt: ['#245f6e', '#4e9b9d', '#b6d9cd'], pants: ['#354f5a', '#627c85'], shoes: '#72503a',
+    body(A, y) { A.L(4, y + 1, 11, y + 6, '#b28a60'); A.R(9, y + 5, 4, 3, '#8b674c'); A.P(11, y + 6, '#dfc08b'); A.R(6, y + 2, 2, 1, '#d3dfbc'); },
+    bodySide(A, y) { A.R(10, y + 3, 4, 5, '#8b674c'); A.R(10, y + 3, 4, 1, '#b28a60'); },
+    bodyBack(A, y) { A.L(4, y + 1, 11, y + 6, '#b28a60'); A.R(8, y + 5, 5, 3, '#8b674c'); } },
+  resident_songguo: { style: 'leafSweep', hair: ['#4c332c', '#78523a', '#aa7d50'], shirt: ['#3e5846', '#718a61', '#a7b487'], pants: ['#514a3e', '#7b735c'], shoes: '#6d4c36',
+    body(A, y) { A.R(5, y + 2, 6, 6, '#bdac7f'); A.R(6, y + 5, 4, 2, '#928363'); A.P(6, y + 3, '#b46d5e'); A.P(9, y + 4, '#688d9b'); A.P(8, y + 6, '#d2b267'); A.R(5, y, 1, 3, '#bdac7f'); A.R(10, y, 1, 3, '#bdac7f'); },
+    bodySide(A, y) { A.R(4, y + 2, 2, 6, '#bdac7f'); A.P(5, y + 4, '#b46d5e'); },
+    bodyBack(A, y) { A.L(5, y, 10, y + 5, '#bdac7f'); A.R(4, y + 5, 8, 1, '#bdac7f'); } },
+  resident_tianxu: { style: 'mechanic', hair: ['#753d29', '#aa603a', '#d28e51'], shirt: ['#793e36', '#ad6452', '#d79774'], pants: ['#43555d', '#788d91'], shoes: '#5b4537', beard: '#7e4c31', fullBeard: true, wide: true,
+    body(A, y) { A.R(5,y+2,6,6,'#657984'); A.R(5,y,1,3,'#a1ac9f'); A.R(10,y,1,3,'#a1ac9f'); A.P(5,y+3,'#e0c58f'); A.R(9,y+4,2,3,'#b7b9a3'); A.P(9,y+4,'#edf0d3'); },
+    bodySide(A, y) { A.R(5, y + 4, 3, 3, '#ddd3ad'); A.P(6, y + 5, '#8f9b85'); },
+    bodyBack(A, y) { A.R(4, y + 2, 8, 1, '#88574c'); A.R(8, y + 5, 3, 2, '#ddd3ad'); } },
+  resident_qiaosui: { style: 'bluntBob', hair: ['#20262b', '#35373d', '#5b5d61'], skin: ['#d49f83', '#f0c8a3', '#ffe8c6'], shirt: ['#b2b2a0', '#dfdcc0', '#fff1d5'], pants: ['#365b54', '#66877b'], shoes: '#605040', eyeColor: '#639e97',
+    body(A, y) { A.R(5, y + 2, 6, 6, '#659286'); A.R(5, y, 1, 3, '#659286'); A.R(10, y, 1, 3, '#659286'); A.R(8, y + 4, 2, 3, '#ba884d'); A.P(8, y + 4, '#e7bd77'); A.P(8, y + 3, '#e2d6b0'); },
+    bodySide(A, y) { A.R(5, y + 2, 2, 6, '#659286'); A.R(6, y + 5, 2, 2, '#ba884d'); },
+    bodyBack(A, y) { A.L(5, y, 10, y + 6, '#659286'); A.R(4, y + 6, 8, 1, '#659286'); } },
+  resident_wangshu: { style: 'violetCrop', hair: ['#665979', '#9d86ac', '#d1b2cc'], shirt: ['#344f6d', '#6c8da3', '#cdd4c1'], pants: ['#464f66', '#768096'], shoes: '#785b43', eyes: 'hex', glassC: '#9d7e5e',
+    body(A, y) { A.R(5,y,6,1,'#e4dbc0'); A.L(4,y+2,8,y+6,'#e0d8bd'); A.L(11,y+2,8,y+6,'#e0d8bd'); A.R(11,y+1,3,2,'#efe4c2'); A.P(12,y+2,'#a18d69'); A.R(8, y + 5, 5, 3, '#9b7553'); A.R(9, y + 5, 3, 1, '#c8a975'); A.P(10, y + 6, '#e9d397'); },
+    bodySide(A, y) { [2, 4, 6].forEach(d => A.R(5, y + d, 7, 1, '#d8ddc5')); A.R(10, y + 5, 3, 3, '#9b7553'); },
+    bodyBack(A, y) { [2, 4, 6].forEach(d => A.R(4, y + d, 8, 1, '#d8ddc5')); A.R(4, y + 6, 8, 1, '#9b7553'); } },
+});
+
+/* 最终图集的世界行走设计。头像与小人共用身份、色彩和职业标记。 */
+const REF_LOOKS = {
+  chef: { style:'chef', hair:['#71372c','#a95537','#d48651'], hairUnder:['#71372c','#a95537','#d48651'], skin:['#8e5138','#b97950','#d99c6b'], shirt:['#803b32','#b76148','#dd9370'], pants:['#443f3b','#696356'], beard:'#9d4f31', fullBeard:true, wide:true,
+    body(A,y){A.R(5,y+2,6,6,'#ecddbc');A.R(4,y,1,4,'#ecddbc');A.R(11,y,1,4,'#ecddbc');A.P(6,y+1,'#dfb563');A.P(9,y+1,'#dfb563');A.R(6,y+5,4,1,'#bfa782');},
+    bodyBack(A,y){A.R(4,y+3,8,1,'#e9d6af');A.L(5,y,10,y+3,'#e9d6af');A.L(10,y,5,y+3,'#e9d6af');},
+    bodySide(A,y){A.R(4,y+2,3,6,'#e9d6af');A.R(4,y+3,8,1,'#d0bb94');} },
+  pm: { style:'highPony', hair:['#282731','#403a40','#655558'], skin:['#d89e7c','#f0c49f','#ffe4bc'], shirt:['#4e5b3e','#7c895b','#a8b17c'], pants:['#41464a','#616962'], eyes:'glasses', glassC:'#b77c57',
+    body(A,y){A.R(6,y,4,3,'#eee2c5');A.P(7,y+3,'#cfa45d');A.R(10,y+3,4,5,'#a67b4c');A.R(11,y+4,2,3,'#e5d4ab');A.R(10,y+3,3,1,'#d0a565');},
+    bodySide(A,y){A.R(3,y+3,4,5,'#b88b55');A.R(4,y+4,2,3,'#eddeb9');},
+    bodyBack(A,y){A.R(4,y+1,8,1,'#9ca56d');A.R(4,y+6,8,1,'#49563b');} },
+  webkid: { style:'earphoneCrop', hair:['#a64e2c','#dd8141','#f3b36b'], skin:['#d49a74','#f0c09a','#ffe1b5'], shirt:['#293a51','#435a75','#6c8294'], pants:['#3c4550','#5d6671'], freckles:true, extra:null,
+    body(A,y){A.R(4,y,8,2,'#5d738c');A.R(5,y+2,1,4,'#dda24e');A.R(10,y+2,1,4,'#dda24e');A.R(6,y+5,4,2,'#33475f');A.P(11,y+4,'#efc271');},
+    bodySide(A,y){A.R(5,y,7,2,'#5d738c');A.R(5,y+2,1,4,'#dda24e');},
+    bodyBack(A,y){A.R(4,y,8,3,'#5d738c');A.R(5,y+3,6,1,'#2b3e54');} },
+  cook: { style:'closeCurls', hair:['#302625','#47332d','#684d3a'], skin:['#88543a','#b17b53','#d5a270'], shirt:['#68383b','#934d48','#bd7b68'], pants:['#3c3937','#60574b'], beard:'#3c2c28', fullBeard:false, brows:'#49312b', wide:true,
+    body(A,y){A.R(5,y+3,6,5,'#ead9b7');A.R(4,y,1,6,'#ead9b7');A.R(11,y,1,6,'#ead9b7');A.R(6,y+1,4,1,'#cea05d');A.P(7,y+2,'#e7bf72');},
+    bodyBack(A,y){A.R(4,y+3,8,1,'#e9d6af');A.R(5,y,1,4,'#e9d6af');A.R(10,y,1,4,'#e9d6af');},
+    bodySide(A,y){A.R(4,y+2,3,6,'#e9d6af');A.R(4,y+3,8,1,'#d0bb94');} },
+  waiter: { style:'bowl', hair:['#b9a788','#e1d4b4','#fff0d0'], shirt:['#a46d67','#cd9b8d','#e9c3aa'], pants:['#5b4942','#806653'], eyeColor:'#7696a8',
+    body(A,y){A.R(4,y,3,7,'#eaddbc');A.R(9,y,3,7,'#eaddbc');A.R(6,y+1,4,1,'#914d49');A.P(6,y+2,'#773a3b');A.P(9,y+2,'#773a3b');A.R(7,y+3,2,4,'#d7bd99');},
+    bodyBack(A,y){A.R(4,y,8,7,'#dfcba8');A.R(5,y+5,6,1,'#b69775');},
+    bodySide(A,y){A.R(8,y,4,7,'#eaddbc');A.R(8,y+5,4,1,'#b69775');} },
+  builder: { style:'miner', hair:['#b77930','#e3ad4e','#f4d17b'], hairUnder:['#332a27','#4e352c','#73513c'], skin:['#805035','#a97049','#cc9663'], shirt:['#75654f','#a18f6d','#d5c4a0'], pants:['#374a5b','#5f7484'], beard:'#68452f', fullBeard:true, wide:true,
+    body(A,y){A.R(4,y,1,7,'#3d5366');A.R(11,y,1,7,'#3d5366');A.R(5,y+2,6,6,'#4b6375');A.P(4,y+1,'#d5b271');A.P(11,y+1,'#d5b271');A.R(7,y+4,3,2,'#6c8290');A.R(10,y+6,3,2,'#93704b');},
+    bodyBack(A,y){A.L(4,y,10,y+5,'#41596a');A.L(11,y,5,y+5,'#41596a');A.R(4,y+5,8,3,'#41596a');},
+    bodySide(A,y){A.R(8,y,2,6,'#41596a');A.R(5,y+3,7,4,'#41596a');A.R(11,y+5,3,3,'#97754e');} },
+  prof: { style:'scholar', hair:['#c5bca6','#e9e1c9','#fff2d5'], shirt:['#28394e','#455e7d','#7188a1'], pants:['#303b4b','#4b5a6d'], eyes:'glasses', glassC:'#477fa3', beard:'#eee4c8', brows:'#e2d8bd',
+    body(A,y){A.R(6,y,4,5,'#363c4c');A.L(4,y+1,5,y+6,'#c7a15c');A.L(11,y+1,10,y+6,'#c7a15c');A.R(4,y+6,8,1,'#c7a15c');A.P(11,y+3,'#efcf87');},
+    bodySide(A,y){A.R(4,y+1,1,6,'#c7a15c');A.R(4,y+6,8,1,'#c7a15c');A.R(9,y+4,3,3,'#76624a');},
+    bodyBack(A,y){A.R(4,y+1,8,1,'#b59354');A.R(4,y+6,8,1,'#b59354');A.R(7,y+3,2,2,'#5c7490');} },
+  granny: { style:'silverBun', hair:['#a69c9b','#d4c9bf','#f3e7d4'], shirt:['#77506b','#a47d96','#c8a5b7'], pants:['#5d425d','#7d5d7b'], eyes:'glasses', glassC:'#b38b55', robe:true, trim:'#9d7a8d',
+    body(A,y){A.R(6,y,4,5,'#f0e2c3');A.L(3,y+1,7,y+6,'#c49cac');A.L(12,y+1,8,y+6,'#b486a0');A.E(10,y+2,1.7,1.7,'#c4a15c');A.P(10,y+2,'#78506c');},
+    bodyBack(A,y){A.R(3,y,10,4,'#b68da4');A.R(4,y+4,8,1,'#8b627e');},
+    bodySide(A,y){A.R(4,y,8,4,'#b68da4');A.R(5,y+4,6,1,'#8b627e');} },
+  detective: { style:'fedora', hair:['#937047','#baa078','#ddc59c'], hairUnder:['#28252d','#40363a','#65534b'], shirt:['#8d785c','#b6a082','#d8c6a4'], robe:true, trim:'#806747',
+    body(A,y){A.R(6,y,4,5,'#ece1c7');A.R(7,y+1,2,5,'#8f4943');A.L(4,y+1,6,y+4,'#806d54');A.L(11,y+1,9,y+4,'#806d54');A.R(4,y+6,8,1,'#826648');A.P(8,y+6,'#d5b878');},
+    bodyBack(A,y){A.R(3,y,10,3,'#c7b18d');A.R(4,y+6,8,1,'#826648');A.P(8,y+6,'#d5b878');},
+    bodySide(A,y){A.R(4,y,8,3,'#c7b18d');A.R(4,y+6,8,1,'#826648');} },
+  zero: { style:'greenBob', hair:['#293e3c','#49665d','#718b73'], skin:['#d3a281','#efc5a2','#ffe4c0'], shirt:['#303d55','#51617c','#7e8c9d'], pants:['#373e4d','#535f6f'], eyes:'glasses', glassC:'#b69e6c',
+    body(A,y){A.R(6,y,4,3,'#ece0c4');A.R(4,y+3,6,5,'#7f5b3e');A.R(5,y+4,4,3,'#b48c57');A.P(10,y+1,'#d3ad66');},
+    bodyBack(A,y){A.R(4,y+1,8,1,'#6d7e91');A.R(7,y+6,2,1,'#aa8952');},
+    bodySide(A,y){A.R(3,y+3,4,5,'#a67d4d');A.R(4,y+4,2,3,'#ead7a9');} },
+  priest: { style:'pilgrim', hair:['#b8a589','#e3d5b8','#fff0ce'], hairUnder:['#292c42','#46445c','#72657a'], shirt:['#b9ab91','#e4d9bd','#fff0d3'], robe:true, trim:'#bea06c', eyeColor:'#9480a7',
+    body(A,y){A.R(6,y,4,5,'#414052');A.L(3,y+1,7,y+5,'#d2bd98');A.L(12,y+1,8,y+5,'#d2bd98');A.P(5,y+2,'#dfbd6b');},
+    bodyBack(A,y){A.R(3,y,10,3,'#d3c2a2');A.R(4,y+3,8,1,'#b7a081');},
+    bodySide(A,y){A.R(4,y,8,3,'#d3c2a2');A.P(5,y+3,'#dfbd6b');} },
+  merchant: { style:'hat', hair:['#3d4a37','#64774e','#8d9b68'], hairUnder:['#56392a','#805539','#ad7b51'], shirt:['#3f553e','#68825a','#92a078'], pants:['#554534','#786349'], beard:'#775036', fullBeard:true, wide:true,
+    body(A,y){A.R(4,y,8,3,'#d8ad52');A.R(4,y+3,1,4,'#ad804b');A.R(11,y+2,1,5,'#ad804b');A.R(6,y+5,4,2,'#8e653d');A.P(7,y+5,'#ddbd76');} },
+  banker: { style:'silverUpdo', hair:['#a39c9c','#cfc6bc','#f0e5cf'], shirt:['#49445f','#716480','#a090a5'], pants:['#48404e','#6c5d6c'], robe:true, trim:'#9a855c', eyes:'glasses', glassC:'#b49862',
+    body(A,y){A.R(6,y,4,4,'#e8dcc4');A.R(4,y+2,3,5,'#67566f');A.R(9,y+2,3,5,'#67566f');A.P(10,y+2,'#daba73');A.R(10,y+3,1,3,'#bfa164');A.P(11,y+5,'#dec281');},
+    bodyBack(A,y){A.R(4,y+1,8,6,'#67566f');A.R(5,y+5,6,1,'#ab9467');},
+    bodySide(A,y){A.R(8,y+1,4,6,'#67566f');A.P(11,y+4,'#dac07c');} },
+  doc: { style:'silverBob', hair:['#a4a39c','#d4d1c0','#f2ebd5'], skin:['#865335','#ae774d','#d39e6b'], shirt:['#b5b4a0','#e2dfc5','#fff0d2'], pants:['#3d6070','#648591'], eyes:null,
+    body(A,y){A.R(6,y,4,7,'#528d97');A.R(4,y+2,1,3,'#526164');A.R(11,y+2,1,3,'#526164');A.L(5,y+5,10,y+5,'#526164');A.P(11,y+1,'#5f9da1');A.P(12,y+2,'#5f9da1');A.P(7,y+3,'#dcb875');},
+    bodyBack(A,y){A.R(4,y+5,8,1,'#bbbaa4');A.R(7,y+6,1,2,'#bbbaa4');},
+    bodySide(A,y){A.R(5,y+1,2,5,'#528d97');A.R(10,y+4,2,2,'#bbbaa4');} },
+  homebody: { style:'messyBun', hair:['#372c41','#594354','#816178'], shirt:['#77667f','#a48b9f','#c6abba'], pants:['#3e3c4a','#655d6c'], extra:null,
+    body(A,y){A.R(3,y,10,3,'#b7a2b0');A.R(6,y+4,4,3,'#8e758c');A.R(5,y+2,1,3,'#d8c4bc');A.P(10,y+3,'#d2ad6a');A.P(11,y+4,'#d2ad6a');},
+    bodyBack(A,y){A.R(4,y,8,3,'#b7a2b0');A.R(5,y+3,6,1,'#7a637e');A.P(8,y+4,'#c5a56b');},
+    bodySide(A,y){A.R(5,y,7,3,'#b7a2b0');A.R(5,y+2,1,3,'#d8c4bc');} },
+  postman: { style:'mailBraid', hair:['#783e2d','#ad6243','#d89160'], skin:['#d09872','#edbd96','#ffe0b3'], shirt:['#455b3e','#74895b','#a3b17d'], pants:['#4b4e3d','#72765a'], freckles:true,
+    body(A,y){A.R(6,y,4,3,'#e9dfc1');A.L(4,y,11,y+7,'#a77a49');A.R(9,y+4,4,4,'#9c704b');A.R(10,y+4,2,2,'#e1c489');A.P(5,y+4,'#d4ac5c');} },
+  astro: { style:'cadetCurls', hair:['#bdb6a5','#e3dfc8','#fff3d5'], skin:['#855233','#ad784b','#d39f68'], shirt:['#a7ab9b','#dbd8bd','#fff0ce'], pants:['#4c5d66','#76868c'], eyeColor:'#bb944a',
+    body(A,y){A.R(6,y,4,3,'#58636b');A.R(4,y+3,8,1,'#9c9f8f');A.R(4,y+4,8,3,'#d8d3b4');A.P(10,y+4,'#d1a350');A.R(12,y+2,1,4,'#5d8b88');A.R(3,y+2,1,4,'#5d8b88');},
+    bodyBack(A,y){A.R(4,y+1,8,6,'#b5b9a8');A.R(5,y+2,6,3,'#d9d8b8');A.R(3,y+1,1,5,'#5d8b88');A.R(12,y+1,1,5,'#5d8b88');},
+    bodySide(A,y){A.R(10,y+1,3,6,'#b5b9a8');A.R(11,y+2,1,4,'#5d8b88');A.P(5,y+3,'#d1a350');} },
+  kidA: { style:'starCrop', hair:['#50382b','#78503a','#aa7b50'], shirt:['#5c6d44','#8e9b6a','#bdc396'], pants:['#594b3a','#7b6a50'],
+    body(A,y){A.R(5,y,1,6,'#a17b4e');A.R(10,y,1,6,'#a17b4e');A.R(6,y,4,2,'#ede0bc');A.P(8,y+4,'#d4b363');} },
+  kidB: { style:'twinBuns', hair:['#8b3f43','#bd6263','#de9a86'], shirt:['#ab695c','#d6997f','#ecc0a0'], pants:['#734f49','#a77b64'], freckles:true,
+    body(A,y){A.R(4,y,8,2,'#f2e4c5');A.R(5,y+2,1,5,'#a36b51');A.R(10,y+2,1,5,'#a36b51');A.R(5,y+4,6,3,'#c68c67');A.P(5,y+3,'#dfbc71');A.P(10,y+3,'#dfbc71');} },
+  kidC: { style:'knitcap', hair:['#34415b','#536381','#7888a0'], hairUnder:['#8ea4ad','#c0d3d1','#e1e9d9'], shirt:['#3c4b66','#647691','#95a5b5'], pants:['#3c4353','#5d6b7d'],
+    body(A,y){A.R(3,y,10,3,'#e6ddc2');A.R(5,y+3,6,1,'#b9b4a5');A.P(7,y+4,'#caa968');} },
+  kidD: { style:'cookieBraids', hair:['#3c2c30','#63434a','#91626a'], skin:['#995e3e','#c18a5c','#e2b07b'], shirt:['#b78639','#d7ae59','#eed38a'], pants:['#71563b','#9b7b50'],
+    body(A,y){A.R(4,y,8,2,'#efe1be');A.R(5,y+1,1,6,'#a27735');A.R(10,y+1,1,6,'#a27735');A.R(5,y+4,6,3,'#d5a34c');A.P(5,y+3,'#edd38a');A.P(10,y+3,'#edd38a');} },
+  iceKid: { style:'knitcap', hair:['#303c56','#4c5b78','#77869c'], hairUnder:['#759999','#a8c8bf','#d5e4cd'], shirt:['#3e4f69','#627997','#8ea7b9'], pants:['#384254','#5c6d80'], eyeColor:'#74a5ae',
+    body(A,y){A.R(3,y,10,3,'#c9d3c9');A.R(6,y+3,2,5,'#c9d3c9');A.R(6,y+6,2,1,'#9eaba7');A.P(9,y+5,'#d2b577');},
+    extra(A,y,dir){if(dir!==1){A.R(11,y-1,1,4,'#dce8dc');A.R(10,y,3,1,'#dce8dc');A.P(10,y+2,'#dce8dc');A.P(12,y+2,'#dce8dc');}} },
+  guard: { style:'guardCap', hair:['#25364c','#435774','#73859b'], hairUnder:['#302624','#47332a','#69503a'], skin:['#865136','#b07950','#d6a170'], shirt:['#2b3d54','#49617c','#74889b'], pants:['#303a49','#4c5a6b'], beard:'#49342c', fullBeard:true, wide:true,
+    body(A,y){A.R(6,y,4,2,'#ddcfae');A.R(7,y+2,2,5,'#2b3e55');A.R(4,y+6,8,1,'#8c6c46');A.L(4,y,7,y+4,'#9d794c');A.P(10,y+2,'#d5af62');A.P(8,y+5,'#d5af62');} },
+  tea: { style:'teaBraid', hair:['#30272c','#4c3738','#785449'], shirt:['#8a583f','#b58059','#d9ad7f'], pants:['#67503b','#947452'],
+    body(A,y){A.R(5,y+2,6,6,'#ecdfbb');A.R(4,y,1,5,'#ecdfbb');A.R(11,y,1,5,'#ecdfbb');A.R(7,y+4,1,3,'#7f9562');A.P(6,y+4,'#9ca573');A.P(8,y+5,'#9ca573');},
+    bodyBack(A,y){A.L(5,y,10,y+4,'#ecdfbb');A.L(10,y,5,y+4,'#ecdfbb');A.R(4,y+5,8,1,'#ecdfbb');},
+    bodySide(A,y){A.R(4,y+2,3,6,'#ecdfbb');A.R(4,y+5,8,1,'#d3c49f');} },
+};
+for(const [id,look] of Object.entries(REF_LOOKS)) CHAR[id] = Object.assign(CHAR[id] || {},look);

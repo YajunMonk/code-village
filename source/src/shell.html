@@ -4,29 +4,96 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <!-- /SKELETON -->
-<title>代码村大冒险</title>
+<title>代码物语 · 星灯之约</title>
+<meta name="game-id" content="code-village">
+<meta name="application-name" content="代码物语">
+<meta name="description" content="扮演不响，与 AI 搭档小 A 走进星灯镇，在一场迟到的灯会中学习把想法变成作品。原创像素叙事冒险。">
+<meta name="theme-color" content="#0b1e2a">
+<!-- APP_ICONS -->
 <style>
-/* 单一视觉世界：深夜紫的游戏机外框，像素画面居中铺满 */
-:root { --bg: #0b0912; --ink: #f4e9cc; --gold: #ffd23f; color-scheme: dark; }
+/* 画面仍是游戏本身；竖屏触控底座只在室外控制实际显示时出现。 */
+:root { --bg: #091721; --ink: #f4e9cc; --gold: #ffd23f; color-scheme: dark; }
 html, body { height: 100%; }
 body { margin: 0; background: var(--bg); color: var(--ink); overflow: hidden; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; display: grid; place-items: center; }
-#game { display: block; image-rendering: pixelated; image-rendering: crisp-edges; outline: none; }
-#touch { position: fixed; inset: auto 0 0 0; height: 0; pointer-events: none; }
-#touch button { position: fixed; pointer-events: auto; touch-action: none; border: 3px solid rgba(244,233,204,.55); background: rgba(22,18,40,.42); color: rgba(244,233,204,.9); font: 700 18px/1 system-ui, sans-serif; display: grid; place-items: center; padding: 0; -webkit-user-select: none; user-select: none; }
-#touch button.on { background: rgba(255,210,63,.6); color: #1a1222; }
-#touch .d { width: 52px; height: 52px; border-radius: 10px; }
-#touch [data-k=up] { left: calc(16px + env(safe-area-inset-left) + 54px); bottom: calc(16px + env(safe-area-inset-bottom) + 108px); }
-#touch [data-k=down] { left: calc(16px + env(safe-area-inset-left) + 54px); bottom: calc(16px + env(safe-area-inset-bottom)); }
-#touch [data-k=left] { left: calc(16px + env(safe-area-inset-left)); bottom: calc(16px + env(safe-area-inset-bottom) + 54px); }
-#touch [data-k=right] { left: calc(16px + env(safe-area-inset-left) + 108px); bottom: calc(16px + env(safe-area-inset-bottom) + 54px); }
-#touch [data-k=ok] { right: calc(16px + env(safe-area-inset-right)); bottom: calc(16px + env(safe-area-inset-bottom) + 40px); width: 72px; height: 72px; border-radius: 50%; background: rgba(255,210,63,.75); color: #1a1222; border-color: rgba(26,18,34,.6); font-size: 24px; }
-#touch [data-k=run] { right: calc(16px + env(safe-area-inset-right) + 84px); bottom: calc(16px + env(safe-area-inset-bottom)); width: 56px; height: 56px; border-radius: 50%; font-size: 14px; }
+#game { position: fixed; left: 0; top: 0; display: block; image-rendering: pixelated; outline: none; }
+#touch { --key: 44px; --step: calc(var(--key) + 3px); --edge: 16px; --base: 14px; --action: 60px; --run: 48px; position: fixed; z-index: 2; inset: auto 0 0 0; height: 0; pointer-events: none; isolation: isolate; }
+#touch[hidden] { display: none !important; }
+#touch button { position: absolute; box-sizing: border-box; pointer-events: auto; touch-action: none; border: 1px solid rgba(164,181,143,.65); background: rgba(24,26,31,.52); color: #f0f0ee; font: 700 17px/1 system-ui, sans-serif; display: grid; place-items: center; padding: 0; -webkit-user-select: none; user-select: none; box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 2px 8px rgba(8,8,10,.25); }
+#touch button.on { background: rgba(89,107,74,.85); color: #fff; box-shadow: inset 0 2px 4px rgba(8,8,10,.45); }
+#touch button:focus-visible { outline: 2px solid #f4f4f0; outline-offset: 4px; }
+#touch .d { width: var(--key); height: var(--key); border-radius: 10px; }
+#touch [data-k=up] { left: calc(var(--edge) + env(safe-area-inset-left) + var(--step)); bottom: calc(var(--base) + env(safe-area-inset-bottom) + var(--step) + var(--step)); }
+#touch [data-k=down] { left: calc(var(--edge) + env(safe-area-inset-left) + var(--step)); bottom: calc(var(--base) + env(safe-area-inset-bottom)); }
+#touch [data-k=left] { left: calc(var(--edge) + env(safe-area-inset-left)); bottom: calc(var(--base) + env(safe-area-inset-bottom) + var(--step)); }
+#touch [data-k=right] { left: calc(var(--edge) + env(safe-area-inset-left) + var(--step) + var(--step)); bottom: calc(var(--base) + env(safe-area-inset-bottom) + var(--step)); }
+#touch [data-k=ok] { right: calc(var(--edge) + env(safe-area-inset-right)); bottom: calc(var(--base) + env(safe-area-inset-bottom) + 44px); width: var(--action); height: var(--action); border-radius: 50%; background: rgba(77,96,66,.6); color: #f5f3f0; font-size: 25px; }
+#touch [data-k=run] { right: calc(var(--edge) + env(safe-area-inset-right) + var(--action) + 12px); bottom: calc(var(--base) + env(safe-area-inset-bottom) - 8px); width: var(--run); height: var(--run); border-radius: 50%; font-size: 14px; }
+@media (max-aspect-ratio: 25/27) {
+  #touch { --key: clamp(44px, 12.8vw, 50px); --edge: clamp(16px, 5.1vw, 24px); --action: clamp(64px, 18.5vw, 72px); --run: 52px; --lift: clamp(40px, 8vh, 72px); --base: calc(16px + var(--lift)); height: calc(188px + var(--lift) + env(safe-area-inset-bottom)); pointer-events: auto; }
+  #touch:not([hidden])::before { content: ''; position: absolute; z-index: -1; inset: 0; border-top: 3px solid #46533f; border-radius: 26px 26px 0 0; background: radial-gradient(rgba(255,255,255,.025) .45px, transparent .7px) 0 0 / 3px 3px, linear-gradient(180deg, rgba(227,233,204,.18), transparent 18px, rgba(49,65,40,.14)), linear-gradient(90deg, #7b8969 0, #9ba587 6%, #909d7e 50%, #9ba587 94%, #7b8969 100%); box-shadow: 0 -5px 15px rgba(8,8,12,.3), inset 0 2px 0 rgba(224,232,199,.32), inset 0 -2px 0 #5a694c; }
+  #touch:not([hidden])::after { content: ''; position: absolute; right: calc(var(--edge) + env(safe-area-inset-right) + var(--action) + 14px); bottom: calc(126px + var(--lift) + env(safe-area-inset-bottom)); width: 48px; height: 17px; background: radial-gradient(ellipse at center, #4f5d43 0 2px, #b3be9e 2px 3px, transparent 3px) 0 0 / 12px 8px; transform: rotate(-9deg); opacity: .85; }
+  #touch button { border: 1px solid #0e1014; background: linear-gradient(145deg, #383b40, #202226 65%, #191b1f); color: #e6e7e5; text-shadow: 0 1px #08090c; box-shadow: 0 0 0 4px #5f6e50, 0 5px 0 4px #48583e, inset 0 1px 0 #595c60, inset 0 -3px 0 #101115, 0 8px 12px rgba(30,42,23,.4); }
+  #touch .d { border-radius: 9px; }
+  #touch [data-k=up] { border-radius: 12px 12px 7px 7px; }
+  #touch [data-k=down] { border-radius: 7px 7px 12px 12px; }
+  #touch [data-k=left] { border-radius: 12px 7px 7px 12px; }
+  #touch [data-k=right] { border-radius: 7px 12px 12px 7px; }
+  #touch [data-k=ok] { border-color: #0a0c10; background: radial-gradient(ellipse at 35% 22%, #44474c, #27292e 55%, #191b20); color: #f6f6f3; text-shadow: 0 2px #0c0d11; box-shadow: 0 0 0 5px #637451, 0 5px 0 5px #48583e, inset 0 2px 0 #5b5f64, inset 0 -4px 0 #111217, 0 8px 14px rgba(30,42,23,.5); }
+  #touch [data-k=run] { border-color: #111318; background: linear-gradient(145deg, #3c3f44, #24262b); color: #dedfdd; }
+  #touch button.on { background: #1b1d22; color: #fff; text-shadow: none; transform: translateY(3px); box-shadow: 0 0 0 4px #526245, inset 0 2px 4px rgba(0,0,0,.5); }
+  #touch [data-k=ok].on { background: #202227; color: #fff; box-shadow: 0 0 0 5px #526245, inset 0 3px 5px rgba(0,0,0,.5); }
+}
+/* 极短视口保留主角所在的主路；常见 568px 及以上手机使用完整上移量。 */
+@media (max-aspect-ratio: 25/27) and (max-height: 520px) { #touch { --lift: 0px; } }
+@media (hover: hover) and (pointer: fine) { #touch { display: none; } }
 #tin { position: fixed; display: none; opacity: 0; font-size: 16px; border: 0; padding: 0; margin: 0; background: transparent; color: transparent; caret-color: transparent; z-index: 5; }
+/* 存档文件使用系统文件选择器；面板保留游戏的夜色、米金和像素字体。 */
+.save-overlay { position: fixed; z-index: 20; inset: 0; display: grid; place-items: center; padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); box-sizing: border-box; background: rgba(4,15,22,.72); touch-action: pan-y; }
+.save-panel { box-sizing: border-box; width: min(100%, 530px); max-height: 100%; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; touch-action: pan-y; color: #f4eedc; background: #102a34; border: 2px solid #82968b; box-shadow: 0 0 0 4px #0a1c24, 7px 9px 0 rgba(0,8,14,.42), inset 0 0 0 2px #29434b; outline: none; font: 16px/1.65 FusionPixel, "PingFang SC", system-ui, sans-serif; }
+.save-panel * { box-sizing: border-box; }
+.save-panel [hidden] { display: none !important; }
+.save-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 21px 26px 17px; border-bottom: 1px solid #39545a; }
+.save-eyebrow { margin: 0 0 2px; color: #a9b9ac; font-size: 13px; letter-spacing: .15em; }
+.save-panel h1 { margin: 0; font-size: 26px; line-height: 1.35; color: #f5dfb0; font-weight: 400; }
+.save-panel h2 { margin: 0 0 9px; font-size: 15px; font-weight: 400; color: #aec6b5; }
+.save-content { padding: 21px 26px 18px; }
+.save-panel p { overflow-wrap: anywhere; }
+.save-current { padding: 0 0 17px; }
+.save-chapter { margin: 0 0 3px; font-size: 22px; line-height: 1.5; color: #fff0ca; }
+.save-meta { margin: 0 0 5px; color: #dee3d5; }
+.save-date, .save-help, .save-file { margin: 0; font-size: 14px; color: #a8b9bd; }
+.save-actions { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+.save-actions .save-wide { grid-column: 1 / -1; }
+.save-panel button { appearance: none; min-height: 44px; padding: 8px 12px; cursor: pointer; border: 1px solid #74928b; border-radius: 2px; color: #f3edda; background: linear-gradient(#254c53 0 48%, #1d3e46 48%); box-shadow: inset 0 1px 0 rgba(238,243,214,.1), 0 2px 0 #071b25; font: inherit; font-size: 16px; line-height: 1.4; touch-action: manipulation; }
+.save-panel button:hover:not(:disabled) { border-color: #eed8a6; }
+.save-panel button:active:not(:disabled) { transform: translateY(1px); box-shadow: none; }
+.save-panel button:focus-visible, .save-preview:focus-visible { outline: 2px solid #f7d683; outline-offset: 4px; }
+.save-panel button:disabled { opacity: .43; cursor: default; }
+.save-panel button.save-primary { color: #243d38; background: linear-gradient(#f0dfb5 0 48%, #d8bd87 48%); border-color: #e8cf98; }
+.save-panel button.save-close { min-width: 44px; width: 44px; padding: 0; font: 28px/1 system-ui, sans-serif; color: #d0dfd6; border-color: transparent; background: transparent; box-shadow: none; }
+.save-help { margin-top: 13px; line-height: 1.65; }
+.save-panel button.save-recovery { width: 100%; margin-top: 16px; font-size: 14px; background: transparent; border-color: #4a6a6a; color: #cfdbce; }
+.save-preview { margin-top: 20px; padding: 17px; background: #193b40; border: 1px solid #a3a785; scroll-margin: 18px; outline: none; }
+.save-preview h2 { color: #eed8a6; }
+.save-file { margin-bottom: 13px; -webkit-user-select: text; user-select: text; }
+.save-confirm-copy { margin: 14px 0; color: #e1dfc8; font-size: 14px; }
+.save-preview .save-actions { grid-template-columns: 1fr auto; }
+.save-preview .save-actions button { font-size: 14px; }
+.save-status { min-height: 0; margin: 13px 0 0; color: #b6d9b0; font-size: 14px; -webkit-user-select: text; user-select: text; }
+.save-status:empty { display: none; }
+.save-status.is-error { color: #ffb9a5; }
+.save-sound { margin-top: 22px; padding-top: 17px; border-top: 1px solid #39545a; }
+.save-sound button { font-size: 14px; min-height: 42px; }
+.save-footer { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 26px; border-top: 1px solid #39545a; background: #0c242e; }
+.save-footer span { font-size: 13px; color: #a8b9bd; }
+.save-footer button { min-width: 100px; font-size: 14px; }
+@media (max-width: 420px) { .save-overlay { padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); } .save-header { padding: 17px 18px 14px; } .save-content { padding: 18px; } .save-footer { padding: 12px 18px; } .save-panel h1 { font-size: 24px; } .save-chapter { font-size: 20px; } .save-preview { padding: 13px; } }
+@media (max-height: 450px) and (min-width: 600px) { .save-panel { width: min(100%, 650px); } .save-header { padding-top: 12px; padding-bottom: 10px; } .save-content { padding-top: 15px; } }
 @media (prefers-reduced-motion: reduce) { #touch button { transition: none; } }
 </style>
 </head>
 <body>
-<canvas id="game" width="480" height="270" tabindex="0" aria-label="代码村大冒险 游戏画面"></canvas>
+<canvas id="game" width="480" height="270" tabindex="0" aria-label="代码物语 游戏画面"></canvas>
 <div id="touch" hidden>
   <button class="d" data-k="up" type="button" aria-label="上">▲</button>
   <button class="d" data-k="left" type="button" aria-label="左">◀</button>

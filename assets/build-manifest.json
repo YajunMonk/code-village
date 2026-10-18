@@ -1,0 +1,253 @@
+{
+  "format": 1,
+  "mode": "external",
+  "entrypoint": {
+    "file": "index.html",
+    "bytes": 658961,
+    "sha256": "c0dbc1b2045b5a3b4500c980c9fa395f76abbc5d3f5505c06ab0e157dad34b58"
+  },
+  "font_bytes": 63760,
+  "asset_keys": 18,
+  "unique_source_files": 17,
+  "font_license": {
+    "file": "FONT-LICENSE.txt",
+    "bytes": 18993,
+    "sha256": "a0e37147ea540c0a2f46039aac2c8fa42b0457018cb49bcd6a5771619c46a7a7"
+  },
+  "unique_output_files": 17,
+  "source_image_bytes": 37277990,
+  "webp_image_bytes": 29788076,
+  "assets": {
+    "title-keyart": {
+      "source": "v3/title-starry-promise.png",
+      "source_sha256": "3bbbb1d03c5bc849c89aae85d48a1e9d086ebd6ca3c69bb4f83e5e3c15716d1d",
+      "source_bytes": 2268215,
+      "width": 1672,
+      "height": 941,
+      "url": "assets/65a5576def1a736eb189971c5bca8164283e9969bc402cb291e8e553a145642c.webp",
+      "sha256": "65a5576def1a736eb189971c5bca8164283e9969bc402cb291e8e553a145642c",
+      "bytes": 1792462
+    },
+    "village-keyart": {
+      "source": "v2/title.png",
+      "source_sha256": "65c67c90a106bac9ccff99d72ac21118a671fbc27505410e2791e6fabe1bd04d",
+      "source_bytes": 2294063,
+      "width": 1672,
+      "height": 941,
+      "url": "assets/6eb3ed0cce6d588ad8abd6f7cd7adac0fa1256a0c960a8a17db6db857a8ffc4d.webp",
+      "sha256": "6eb3ed0cce6d588ad8abd6f7cd7adac0fa1256a0c960a8a17db6db857a8ffc4d",
+      "bytes": 1840034
+    },
+    "brand-wordmark": {
+      "source": "v3/code-monogatari-wordmark-light.png",
+      "source_sha256": "71d76f653d359859d95dc12014605317d9b9fde0425430de7a38daa198f9bac7",
+      "source_bytes": 721977,
+      "width": 1774,
+      "height": 887,
+      "url": "assets/47656a1779818e07cef599b423c4a177309539a2c053b10d1ef4eae82408ffbc.webp",
+      "sha256": "47656a1779818e07cef599b423c4a177309539a2c053b10d1ef4eae82408ffbc",
+      "bytes": 489904
+    },
+    "village-icon": {
+      "source": "v3/game-icon-xa-256.png",
+      "source_sha256": "90ce743dd9b6bae3bd9b51c6382853da2f9b8fbecf9fecc71daa8aba6aa53666",
+      "source_bytes": 95114,
+      "width": 256,
+      "height": 256,
+      "url": "assets/4e91002730cdef4d8e2afd3f474b5def696b1c1c1bba37ca7946eb0542f4638b.webp",
+      "sha256": "4e91002730cdef4d8e2afd3f474b5def696b1c1c1bba37ca7946eb0542f4638b",
+      "bytes": 63918
+    },
+    "comic-arrival": {
+      "source": "v2/opening.png",
+      "source_sha256": "2329bc94df33ee6714a7b7bd706b88681e87dae8387b04169ee711342afc63ae",
+      "source_bytes": 2410554,
+      "width": 1672,
+      "height": 941,
+      "url": "assets/e5093498d5d6c3a1e5355a36eb88d6500860309dc3deefa600dec42aeab6d2e7.webp",
+      "sha256": "e5093498d5d6c3a1e5355a36eb88d6500860309dc3deefa600dec42aeab6d2e7",
+      "bytes": 1961632
+    },
+    "comic-library": {
+      "source": "room-library.png",
+      "source_sha256": "c79928d7a46b4daef29758ed2790199a0af70f1dc065b4e4c9fb822fa7d801c9",
+      "source_bytes": 2736437,
+      "width": 1672,
+      "height": 941,
+      "url": "assets/e88b0f59e7e3afa6a8d6b01f443597a5857e15f9fcba69eff6bde5d8a28e5ff8.webp",
+      "sha256": "e88b0f59e7e3afa6a8d6b01f443597a5857e15f9fcba69eff6bde5d8a28e5ff8",
+      "bytes": 2240494
+    },
+    "comic-festival": {
+      "source": "v2/festival.png",
+      "source_sha256": "3482f94d571fb0d3518a726d04b33d5156241d847a098f0c61bc993713d3942e",
+      "source_bytes": 2686467,
+      "width": 1672,
+      "height": 941,
+      "url": "assets/dce04b3d8d856fd1d986ef15177fbe63ea02eabfaae76b5d95cf934fe922bf44.webp",
+      "sha256": "dce04b3d8d856fd1d986ef15177fbe63ea02eabfaae76b5d95cf934fe922bf44",
+      "bytes": 2224972
+    },
+    "room-cafe": {
+      "source": "room-cafe.png",
+      "source_sha256": "a8eee80c1d90d815c02225be42585680c09df6d807906e55242054b0bb880ec0",
+      "source_bytes": 2743268,
+      "width": 1672,
+      "height": 941,
+      "url": "assets/fe72e3f196ae99437dc17bdd4931529d16723766a1e5f563c5afc922c588e78e.webp",
+      "sha256": "fe72e3f196ae99437dc17bdd4931529d16723766a1e5f563c5afc922c588e78e",
+      "bytes": 2187914
+    },
+    "room-library": {
+      "source": "room-library.png",
+      "source_sha256": "c79928d7a46b4daef29758ed2790199a0af70f1dc065b4e4c9fb822fa7d801c9",
+      "source_bytes": 2736437,
+      "width": 1672,
+      "height": 941,
+      "url": "assets/e88b0f59e7e3afa6a8d6b01f443597a5857e15f9fcba69eff6bde5d8a28e5ff8.webp",
+      "sha256": "e88b0f59e7e3afa6a8d6b01f443597a5857e15f9fcba69eff6bde5d8a28e5ff8",
+      "bytes": 2240494
+    },
+    "room-workshop": {
+      "source": "room-workshop.png",
+      "source_sha256": "143627d6b384f503ed22447d22cc9402b5292b294da6442b2a3c2667b8df895b",
+      "source_bytes": 2837720,
+      "width": 1672,
+      "height": 941,
+      "url": "assets/b0531c4d9660dbe492a032cc7bbfe26d85cf19bc5098f9f36cc30a310e75c066.webp",
+      "sha256": "b0531c4d9660dbe492a032cc7bbfe26d85cf19bc5098f9f36cc30a310e75c066",
+      "bytes": 2331540
+    },
+    "room-observatory": {
+      "source": "room-observatory.png",
+      "source_sha256": "02dcc42055957688240d38f1e7d3c58164e3991085bbec8c88c6976fe8b25a39",
+      "source_bytes": 2767322,
+      "width": 1672,
+      "height": 941,
+      "url": "assets/63c2774e5b10c62eea073c8a0f0f0305d56b693605eaf06c082bff1deea0a2a8.webp",
+      "sha256": "63c2774e5b10c62eea073c8a0f0f0305d56b693605eaf06c082bff1deea0a2a8",
+      "bytes": 2273226
+    },
+    "room-studio": {
+      "source": "room-studio.png",
+      "source_sha256": "5efbe83da708fa9fbbc45e9b1d2504ce3f55fb9e800cd6e00495c5d093fab9a5",
+      "source_bytes": 2623880,
+      "width": 1672,
+      "height": 941,
+      "url": "assets/9f39d55b755ff14170920814186c7ca20dab1bad9c65dbe0cd091d0b7a516490.webp",
+      "sha256": "9f39d55b755ff14170920814186c7ca20dab1bad9c65dbe0cd091d0b7a516490",
+      "bytes": 2112342
+    },
+    "room-postoffice": {
+      "source": "room-postoffice.png",
+      "source_sha256": "17cdd4612cbb6c925596d31f0398cdd0b10e035cee3513cae21947a737f8e72f",
+      "source_bytes": 2665038,
+      "width": 1672,
+      "height": 941,
+      "url": "assets/5b1ca7b591f2a1efd3b0224db7d2f355e503d0150ea0249f1a3c8f22e692ea8b.webp",
+      "sha256": "5b1ca7b591f2a1efd3b0224db7d2f355e503d0150ea0249f1a3c8f22e692ea8b",
+      "bytes": 2172950
+    },
+    "portrait-hero": {
+      "source": "v3/buxiang-portrait-transparent.png",
+      "source_sha256": "400d46915496389df916079794ea59f44a4591cc3942b92346c953042f795bc0",
+      "source_bytes": 950924,
+      "width": 1254,
+      "height": 1254,
+      "url": "assets/cba7ce6146dce4255f84b4fc8f8bf30ec33d05bcecee3b7e0996af1a07a44fc4.webp",
+      "sha256": "cba7ce6146dce4255f84b4fc8f8bf30ec33d05bcecee3b7e0996af1a07a44fc4",
+      "bytes": 608130
+    },
+    "portraits-main": {
+      "source": "v2/portraits-main-diverse.png",
+      "source_sha256": "c0bc0325c3d5fd1f06f6bb26466a105c1dbb53a58bc100511056264f1c4c01d1",
+      "source_bytes": 2277733,
+      "width": 1448,
+      "height": 1086,
+      "url": "assets/675badd8750cf82591d45d8dbfabf17377e813605b40f260fdb3c50a0df8a033.webp",
+      "sha256": "675badd8750cf82591d45d8dbfabf17377e813605b40f260fdb3c50a0df8a033",
+      "bytes": 1819486
+    },
+    "portraits-town": {
+      "source": "v2/portraits-town-diverse.png",
+      "source_sha256": "5b423171d9727717d5eadddb3270584332015f5be1452c94468d0880ad1c461f",
+      "source_bytes": 2484977,
+      "width": 1448,
+      "height": 1086,
+      "url": "assets/a974cb4cd92fdea863fd3ec26723fb4b39b8893ce091b49526dc242c3b6e26b2.webp",
+      "sha256": "a974cb4cd92fdea863fd3ec26723fb4b39b8893ce091b49526dc242c3b6e26b2",
+      "bytes": 1937490
+    },
+    "portraits-residents": {
+      "source": "v2/portraits-residents.png",
+      "source_sha256": "5ca240093571612b6c553857d6655cda20adeba77fb43db59dfa0ea7051d14e8",
+      "source_bytes": 2319170,
+      "width": 1448,
+      "height": 1086,
+      "url": "assets/664f2e2afbc7f73390b0606f47598e8d2e23e85a9dc33b727c7501f2136f67e7.webp",
+      "sha256": "664f2e2afbc7f73390b0606f47598e8d2e23e85a9dc33b727c7501f2136f67e7",
+      "bytes": 1827200
+    },
+    "portraits-fantasy": {
+      "source": "v2/portraits-fantasy.png",
+      "source_sha256": "1cd29b7ab2f7d5b8c416746c671c7037df9d01afd1fd3be4f36d4bffa3cb333d",
+      "source_bytes": 2395131,
+      "width": 1448,
+      "height": 1086,
+      "url": "assets/138454f3c07661791f55d75f654f7197ed7aadbf3bab65e1807d57c68c4ceb9b.webp",
+      "sha256": "138454f3c07661791f55d75f654f7197ed7aadbf3bab65e1807d57c68c4ceb9b",
+      "bytes": 1904382
+    }
+  },
+  "app_icons": {
+    "favicon": {
+      "source": "v3/app-icon-xa-32.png",
+      "rel": "icon",
+      "sizes": "32x32",
+      "source_sha256": "e375d2f27f8eb6ae930ed024fe49386f0f6aa129dbe960f1a31427eab7522c5f",
+      "source_bytes": 2629,
+      "width": 32,
+      "height": 32,
+      "url": "assets/e375d2f27f8eb6ae930ed024fe49386f0f6aa129dbe960f1a31427eab7522c5f.png",
+      "sha256": "e375d2f27f8eb6ae930ed024fe49386f0f6aa129dbe960f1a31427eab7522c5f",
+      "bytes": 2629
+    },
+    "apple-touch": {
+      "source": "v3/app-icon-xa-180.png",
+      "rel": "apple-touch-icon",
+      "sizes": "180x180",
+      "source_sha256": "5769b88070b406a123ed70c5bdae1d466d7c8536bae9eb60c4cfc74246c68391",
+      "source_bytes": 52358,
+      "width": 180,
+      "height": 180,
+      "url": "assets/5769b88070b406a123ed70c5bdae1d466d7c8536bae9eb60c4cfc74246c68391.png",
+      "sha256": "5769b88070b406a123ed70c5bdae1d466d7c8536bae9eb60c4cfc74246c68391",
+      "bytes": 52358
+    },
+    "app-192": {
+      "source": "v3/app-icon-xa-192.png",
+      "rel": "icon",
+      "sizes": "192x192",
+      "source_sha256": "71593e945305bdbd21d23026fa44ec583533a2063a32f2bcf8a9309011335de6",
+      "source_bytes": 58336,
+      "width": 192,
+      "height": 192,
+      "url": "assets/71593e945305bdbd21d23026fa44ec583533a2063a32f2bcf8a9309011335de6.png",
+      "sha256": "71593e945305bdbd21d23026fa44ec583533a2063a32f2bcf8a9309011335de6",
+      "bytes": 58336
+    },
+    "app-512": {
+      "source": "v3/app-icon-xa-512.png",
+      "rel": "icon",
+      "sizes": "512x512",
+      "source_sha256": "df2ceac0b7640fbb1b821ad7a1fe5acadacdb17a21ac81f7b87531279e1530cc",
+      "source_bytes": 308406,
+      "width": 512,
+      "height": 512,
+      "url": "assets/df2ceac0b7640fbb1b821ad7a1fe5acadacdb17a21ac81f7b87531279e1530cc.png",
+      "sha256": "df2ceac0b7640fbb1b821ad7a1fe5acadacdb17a21ac81f7b87531279e1530cc",
+      "bytes": 308406
+    }
+  },
+  "app_icon_png_bytes": 421729
+}

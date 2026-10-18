@@ -4,7 +4,7 @@
 const FONT = '12px FusionPixel, monospace';
 const LH = 14;
 const UIC = {
-  win: '#182042', win2: '#1f2a56', edge: '#f4e9cc', edge2: '#8a93c4', shadow: '#0a0c1c',
+  win: '#112d36', win2: '#193b43', edge: '#e3d4b4', edge2: '#718f93', shadow: '#06171f',
   text: '#f4eedc', dim: '#a7a6c8', gold: '#ffd23f', mint: '#6ef0a8', rose: '#ff6b84', sky: '#7ad0ff',
   paper: '#f6ecd2', paperInk: '#2a2030',
 };
@@ -12,6 +12,34 @@ const [measCv, measCx] = makeCanvas(4, 4);
 const CW = new Map();
 function cw(ch) { let w = CW.get(ch); if (w === undefined) { measCx.font = FONT; w = Math.round(measCx.measureText(ch).width); CW.set(ch, w); } return w; }
 const textW = s => { let w = 0; for (const ch of s) w += cw(ch); return w; };
+// FusionPixel 的 12px 字格本身是整数轮廓，浏览器的字体栅格器仍可能
+// 在轮廓外加灰边。缓存二值字形后再着色，避免把灰边放大到手机屏幕。
+const TEXT_GLYPHS = new Map(), COLORED_TEXT_GLYPHS = new Map();
+function clearTextCache() { CW.clear(); TEXT_GLYPHS.clear(); COLORED_TEXT_GLYPHS.clear(); }
+function pixelGlyph(ch, color) {
+  const key = ch + '\u0000' + color;
+  if (COLORED_TEXT_GLYPHS.has(key)) return COLORED_TEXT_GLYPHS.get(key);
+  let mask = TEXT_GLYPHS.get(ch);
+  if (!mask) {
+    const [c, g] = makeCanvas(Math.max(1, cw(ch)) + 4, 16);
+    g.font = FONT; g.textBaseline = 'alphabetic'; g.fillStyle = '#ffffff';
+    g.fillText(ch, 2, 12);
+    const pixels = g.getImageData(0, 0, c.width, c.height);
+    for (let i = 3; i < pixels.data.length; i += 4) pixels.data[i] = pixels.data[i] >= 128 ? 255 : 0;
+    g.putImageData(pixels, 0, 0);
+    mask = c; TEXT_GLYPHS.set(ch, mask);
+  }
+  const [c, g] = makeCanvas(mask.width, mask.height);
+  g.drawImage(mask, 0, 0); g.globalCompositeOperation = 'source-in';
+  g.fillStyle = color; g.fillRect(0, 0, c.width, c.height);
+  // 限制长流程中代码高亮等颜色组合的缓存占用。
+  if (COLORED_TEXT_GLYPHS.size >= 2048) COLORED_TEXT_GLYPHS.delete(COLORED_TEXT_GLYPHS.keys().next().value);
+  COLORED_TEXT_GLYPHS.set(key, c);
+  return c;
+}
+function drawPixelGlyph(g, ch, x, y, color) {
+  g.drawImage(pixelGlyph(ch, color), Math.round(x) - 2, Math.round(y) - 2);
+}
 const NO_START = '，。！？、；：）」』》…”’,.!?;:)] ';
 const isWordCh = ch => /[A-Za-z0-9_\-"'.]/.test(ch);
 
@@ -36,9 +64,17 @@ function wrap(text, maxW, base, hl) {
       let j = i, ww = 0; while (j < toks.length && isWordCh(toks[j].ch)) { ww += cw(toks[j].ch); j++; }
       if (w + ww > maxW && ww <= maxW && line.length) { lines.push(line); line = []; w = 0; }
     }
-    if (w + cwid > maxW && line.length && !NO_START.includes(t.ch)) {
-      if (t.ch === ' ') { lines.push(line); line = []; w = 0; continue; }
-      lines.push(line); line = []; w = 0;
+    if (w + cwid > maxW && line.length) {
+      // 保留边界空格；不同窗口宽度下的阅读位置不能因丢字而变化。
+      if (t.ch === ' ') { lines.push(line); line = [t]; w = cwid; continue; }
+      // 把标点连同前一个字移到下一行，不能为了禁则无限越过边界。
+      const tail = [];
+      if (NO_START.includes(t.ch) && line.length > 1) {
+        do { const p = line.pop(); tail.unshift(p); w -= cw(p.ch); }
+        while (line.length > 1 && NO_START.includes(tail[0].ch));
+      }
+      lines.push(line); line = tail; w = tail.reduce((n, p) => n + cw(p.ch), 0);
+      if (w + cwid > maxW) { lines.push(line); line = []; w = 0; }
     }
     line.push(t); w += cwid;
   }
@@ -46,25 +82,28 @@ function wrap(text, maxW, base, hl) {
   return lines;
 }
 function drawLines(g, lines, x, y, { lh = LH, max = Infinity, shadow = UIC.shadow, align = 'left', width = 0 } = {}) {
-  g.font = FONT; g.textBaseline = 'alphabetic';
+  x = Math.round(x); y = Math.round(y);
   let n = 0;
   for (let li = 0; li < lines.length; li++) {
     let cx = x;
     if (align === 'center') cx = x + Math.round((width - lines[li].reduce((a, t) => a + cw(t.ch), 0)) / 2);
     for (const t of lines[li]) {
       if (n >= max) return n;
-      if (shadow) { g.fillStyle = shadow; g.fillText(t.ch, cx + 1, y + li * lh + 11); }
-      g.fillStyle = t.c; g.fillText(t.ch, cx, y + li * lh + 10);
+      if (shadow) drawPixelGlyph(g, t.ch, cx + 1, y + li * lh + 1, shadow);
+      drawPixelGlyph(g, t.ch, cx, y + li * lh, t.c);
       cx += cw(t.ch); n++;
     }
   }
   return n;
 }
 function txt(g, s, x, y, c = UIC.text, { shadow = UIC.shadow, align = 'left' } = {}) {
-  g.font = FONT; g.textBaseline = 'alphabetic';
   if (align === 'center') x = Math.round(x - textW(s) / 2); else if (align === 'right') x = Math.round(x - textW(s));
-  if (shadow) { g.fillStyle = shadow; g.fillText(s, x + 1, y + 11); }
-  g.fillStyle = c; g.fillText(s, x, y + 10);
+  x = Math.round(x); y = Math.round(y);
+  for (const ch of s) {
+    if (shadow) drawPixelGlyph(g, ch, x + 1, y + 1, shadow);
+    drawPixelGlyph(g, ch, x, y, c);
+    x += cw(ch);
+  }
 }
 const countChars = lines => lines.reduce((a, l) => a + l.length, 0);
 
@@ -74,7 +113,7 @@ function win(g, x, y, w, h, style = 'dlg') {
   const S = {
     dlg: [UIC.win, UIC.win2, UIC.edge, UIC.edge2],
     paper: ['#efe2c0', UIC.paper, '#5a4632', '#c9b088'],
-    dark: ['#0e0a18', '#16122a', '#6a6290', '#3a3458'],
+    dark: ['#0c232d', '#122e38', '#708d91', '#3b5862'],
     term: ['#050a08', '#081410', '#7a8a84', '#2a3a34'],
     gold: ['#2a1e10', '#3a2a16', '#ffd23f', '#a8801a'],
   }[style];
@@ -135,10 +174,10 @@ class Btn {
   hit(p) { return p && p.x >= this.x && p.y >= this.y && p.x < this.x + this.w && p.y < this.y + this.h; }
   draw(g, focus, t) {
     const { x, y, w, h } = this;
-    let base = this.style === 'primary' ? ['#ffd23f', '#fff0a0', '#2a1e10'] : this.style === 'chip' ? ['#efe2c0', '#fff8e4', '#3a2a20'] : ['#232c5e', '#2e3a78', UIC.text];
+    let base = this.style === 'primary' ? ['#e8c78e', '#f8e7bd', '#263a37'] : this.style === 'chip' ? ['#efe2c0', '#fff8e4', '#3a2a20'] : ['#173b46', '#22515a', UIC.text];
     if (this.state === 'right') base = ['#1e5a3a', '#2a7a4e', '#eafff2'];
     if (this.state === 'wrong') base = ['#4a1e2e', '#5a2638', '#c88a9a'];
-    const edge = focus && !this.disabled ? UIC.gold : this.state === 'right' ? UIC.mint : this.state === 'wrong' ? UIC.rose : this.style === 'btn' ? '#6a74b0' : '#2a1e10';
+    const edge = focus && !this.disabled ? UIC.gold : this.state === 'right' ? UIC.mint : this.state === 'wrong' ? UIC.rose : this.style === 'btn' ? '#6b9294' : '#2a1e10';
     g.globalAlpha = this.disabled && this.state !== 'right' && this.state !== 'wrong' ? .45 : 1;
     const lift = focus && !this.disabled ? -1 : 0;
     g.fillStyle = 'rgba(6,4,14,.55)'; g.fillRect(x + 1, y + 2, w, h);
@@ -163,7 +202,7 @@ class Btn {
 /* ---------- 屏幕栈 ---------- */
 const screens = [];
 function openScreen(s) { return new Promise(res => { s._res = res; s.t = 0; screens.push(s); if (s.onOpen) s.onOpen(); }); }
-function closeScreen(s, v) { const i = screens.indexOf(s); if (i >= 0) screens.splice(i, 1); if (s._res) { const r = s._res; s._res = null; r(v); } }
+function closeScreen(s, v) { const i = screens.indexOf(s); if (i >= 0) { screens.splice(i, 1); if (s.onClose) s.onClose(); } if (s._res) { const r = s._res; s._res = null; r(v); } }
 const topScreen = () => screens[screens.length - 1];
 
 class Screen {
@@ -200,7 +239,7 @@ class Screen {
 
 /* ---------- 头像 ---------- */
 const WHO = {
-  me: { n: '小白', c: '#e6eaf5', id: 'player', v: 3 }, duck: { n: '鸭老师', c: '#ffd23f', id: 'duck', v: 6 }, xa: { n: '小 A', c: '#7af8ff', id: 'xa', v: 9 },
+  me: { n: '不响', c: '#8cdbc5', id: 'player', v: 3 }, duck: { n: '鸭老师', c: '#ffd23f', id: 'duck', v: 6 }, xa: { n: '小 A', c: '#7af8ff', id: 'xa', v: 9 },
   chef: { n: '锅锅', c: '#bcd6ff', id: 'chef', v: 1 }, pm: { n: '阿需', c: '#7ae8d8', id: 'pm', v: 4 }, snail: { n: '小步', c: '#c8f08a', id: 'snail', v: 2 },
   webkid: { n: '网页三兄弟', c: '#ff9a6a', id: 'webkid', v: 5 }, cook: { n: '饭馆老板', c: '#ff9a8a', id: 'cook', v: 2 }, waiter: { n: '跑堂小 P', c: '#ffb0b0', id: 'waiter', v: 6 },
   builder: { n: '包工头大壮', c: '#ffcc6a', id: 'builder', v: 0 }, prof: { n: '模博士', c: '#bfe6ff', id: 'prof', v: 3 }, granny: { n: '记事本婆婆', c: '#d0b0ff', id: 'granny', v: 4 },
@@ -216,21 +255,44 @@ const WHO = {
 };
 let talkingWho = null;
 function portraitOf(id, talk) {
-  switch (id) {
-    case 'duck': return { img: duckFrame(0, talk), sx: 0, sy: 0, sw: 18, sh: 17 };
-    case 'chef': return { img: chefFrame(0, talk), sx: 0, sy: 6, sw: 20, sh: 20 };
-    case 'runner': return { img: runnerFrame(0, talk), sx: 0, sy: 1, sw: 18, sh: 22 };
-    case 'sticky': return { img: stickyFrame(0, talk), sx: 0, sy: 0, sw: 18, sh: 20 };
-    case 'xa': return { img: xaFrame(0, talk), sx: 0, sy: 0, sw: 18, sh: 18 };
-    case 'snail': return { img: snailFrame(0, talk), sx: 0, sy: 0, sw: 20, sh: 17 };
-    case 'bug': return { img: BUGIMG(), sx: 0, sy: 0, sw: 18, sh: 16 };
-    case 'sign': return { img: PROP.sign, sx: 0, sy: 0, sw: 20, sh: 14 };
-    case 'door': return { img: ICON.deploy, sx: 0, sy: 0, sw: 18, sh: 18 };
-    default: if (id.startsWith('boss:')) return { img: bossFrame(0, false, id.slice(5)), sx: 4, sy: 4, sw: 58, sh: 50 }; return { img: charFrame(id, 0, 0, talk ? 1 : 0), sx: 0, sy: CHAR[id] && CHAR[id].short ? 2 : 1, sw: 18, sh: 18 };
+  const painted=typeof illustratedPortrait==='function'&&illustratedPortrait(id);
+  if(painted)return painted;
+  let img;
+  switch(id) {
+    case 'duck': img=duckFrame(0,talk);break;
+    case 'chef': img=chefFrame(0,talk);break;
+    case 'runner': img=runnerFrame(0,talk);break;
+    case 'sticky': img=stickyFrame(0,talk);break;
+    case 'xa': img=xaFrame(0,talk);break;
+    case 'snail': img=snailFrame(0,talk);break;
+    case 'bug': img=BUGIMG();break;
+    case 'sign': img=PROP.sign;break;
+    case 'door': img=ICON.deploy;break;
+    default: img=id.startsWith('boss:')?bossFrame(0,false,id.slice(5)):charFrame(id,0,0,talk?1:0);
   }
+  // 图集尚未载入时保留完整轮廓，兼容新骨架、发型和帽饰。
+  const h=CHAR[id]?Math.min(img.height,Math.ceil(img.width*.95)):img.height;
+  return {img,sx:0,sy:0,sw:img.width,sh:h};
 }
 function drawPortrait(g, id, x, y, s, talk) {
   const p = portraitOf(id, talk);
+  if(p.artwork) {
+    g.fillStyle='#0a1c24';g.fillRect(x+1,y+2,s,s);
+    g.fillStyle=talk?'#e5c291':'#8aa6a4';g.fillRect(x,y,s,s);
+    if(p.background) {
+      g.save();g.beginPath();g.rect(x+1,y+1,s-2,s-2);g.clip();
+      const bg=g.createLinearGradient(x,y,x+s,y+s);
+      bg.addColorStop(0,p.background.light);bg.addColorStop(.52,p.background.base);bg.addColorStop(1,p.background.shade);
+      g.fillStyle=bg;g.fillRect(x,y,s,s);
+      g.fillStyle=p.background.light;g.globalAlpha=.13;
+      const cell=Math.max(1,Math.round(s/64));
+      for(let i=0;i<19;i++)g.fillRect(x+((i*29+13)%61)*s/64,y+((i*17+9)%59)*s/64,cell,cell);
+      g.restore();
+    } else {g.fillStyle='#203947';g.fillRect(x+1,y+1,s-2,s-2);}
+    const k=Math.min((s-4)/p.sw,(s-4)/p.sh),w=Math.round(p.sw*k),h=Math.round(p.sh*k);
+    g.drawImage(p.img,p.sx,p.sy,p.sw,p.sh,x+Math.round((s-w)/2),y+s-2-h,w,h);
+    return;
+  }
   win(g, x, y, s, s, 'dark');
   g.fillStyle = '#2a2450'; g.fillRect(x + 3, y + 3, s - 6, s - 6);
   g.fillStyle = '#342e60'; g.fillRect(x + 3, y + 3, s - 6, Math.round((s - 6) / 2));
@@ -244,26 +306,43 @@ function drawPortrait(g, id, x, y, s, talk) {
 class DialogScreen extends Screen {
   constructor(lines) { super(); this.lines = lines; this.i = -1; this.next(); }
   layout() {
-    const portrait = !!this.W, ps = PORTRAIT ? 34 : 40;
+    const portrait = !!this.W, ps = PORTRAIT ? 46 : 52;
     const x = 6, w = VW - 12, tx = x + (portrait ? ps + 14 : 12), tw = w - (tx - x) - 12;
     const maxLines = PORTRAIT ? 5 : 3;
     const y = VH - (maxLines * LH + 20) - 6;
-    return { x, y, w, h: maxLines * LH + 20, tx, tw, ps, maxLines };
+    return { x, y, w, h: maxLines * LH + 20, tx, tw, ps, maxLines, nameX: x + (this.reactionMarked ? 36 : 6), headerGap: this.reactionMarked ? 34 : portrait ? 18 : 6 };
   }
   next() {
+    this.reaction = null;
     this.i++;
     if (this.i >= this.lines.length) { talkingWho = null; closeScreen(this); return; }
     const l = this.lines[this.i];
-    let who = '', text = '', code = '';
-    if (typeof l === 'string') text = l; else [who, text, code = ''] = l;
-    this.who = who; this.W = WHO[who]; this.code = code;
+    let who = '', text = '', code = '', metadata = null;
+    if (typeof l === 'string') text = l; else [who, text, code = '', metadata = null] = l;
+    this.who = who; this.W = WHO[who]; this.code = code; this.text = text;
+    this.reaction = makeReaction(who, metadata); this.reactionMarked = !!this.reaction;
     const L = this.layout();
     const all = wrap(text, L.tw, this.W ? UIC.text : '#d8d2ec');
     this.pages = []; for (let i = 0; i < all.length; i += L.maxLines) this.pages.push(all.slice(i, i + L.maxLines));
     this.page = 0; this.n = 0; this.acc = 0; this.total = countChars(this.pages[0]);
+    this.wrapWidth = L.tw; this.wrapLines = L.maxLines;
     talkingWho = who;
   }
+  reflow() {
+    const L = this.layout();
+    if (L.tw === this.wrapWidth && L.maxLines === this.wrapLines) return;
+    // 旋转手机或改变窗口大小时，保留已经读到的位置，并按新行宽重新分页。
+    let read = this.pages.slice(0, this.page).reduce((n, p) => n + countChars(p), 0) + this.n;
+    const all = wrap(this.text, L.tw, this.W ? UIC.text : '#d8d2ec');
+    this.pages = []; for (let i = 0; i < all.length; i += L.maxLines) this.pages.push(all.slice(i, i + L.maxLines));
+    this.page = 0;
+    while (this.page < this.pages.length - 1 && read > countChars(this.pages[this.page])) { read -= countChars(this.pages[this.page]); this.page++; }
+    this.total = countChars(this.pages[this.page]); this.n = Math.min(read, this.total);
+    this.wrapWidth = L.tw; this.wrapLines = L.maxLines;
+  }
   update(dt) {
+    this.reflow();
+    if (this.reaction) { this.reaction.age += Math.max(0, Number.isFinite(dt) ? dt : 0); if (this.reaction.age >= this.reaction.duration) this.reaction = null; }
     this.t += dt;
     if (this.n < this.total) {
       this.acc += dt * 38; const k = Math.floor(this.acc);
@@ -278,21 +357,24 @@ class DialogScreen extends Screen {
     }
   }
   draw(g) {
+    this.reflow();
     const L = this.layout();
     if (this.code) {
       const m = measureCode(this.code, VW - 12);
-      codeBox(g, this.code, Math.round((VW - m.w) / 2), L.y - m.h - (this.W ? 18 : 6), VW - 12);
+      codeBox(g, this.code, Math.round((VW - m.w) / 2), L.y - m.h - L.headerGap, VW - 12);
     }
     win(g, L.x, L.y, L.w, L.h, 'dlg');
     if (this.W) {
       drawPortrait(g, this.W.id, L.x + 7, L.y + Math.round((L.h - L.ps) / 2), L.ps, this.n < this.total && Math.floor(this.t * 8) % 2);
       const nw = textW(this.W.n) + 16;
-      win(g, L.x + 6, L.y - 14, nw, 18, 'gold');
-      txt(g, this.W.n, L.x + 14, L.y - 11, this.W.c);
+      win(g, L.nameX, L.y - 14, nw, 18, 'gold');
+      txt(g, this.W.n, L.nameX + 8, L.y - 11, this.W.c);
     }
     drawLines(g, this.pages[this.page], L.tx, L.y + 9, { max: this.n });
     if (this.n >= this.total) { const b = Math.floor(this.t * 3) % 2; g.fillStyle = UIC.gold; const ax = L.x + L.w - 14, ay = L.y + L.h - 10 + b; g.fillRect(ax, ay, 7, 1); g.fillRect(ax + 1, ay + 1, 5, 1); g.fillRect(ax + 2, ay + 2, 3, 1); g.fillRect(ax + 3, ay + 3, 1, 1); }
+    drawReaction(g, this, L);
   }
+  onClose() { this.reaction = null; if (talkingWho === this.who) talkingWho = null; }
 }
 const talk = lines => openScreen(new DialogScreen(lines));
 

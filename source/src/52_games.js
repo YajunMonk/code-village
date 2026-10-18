@@ -148,7 +148,7 @@ class PromptScreen extends Screen {
     xa.mood = score === n ? 'happy' : score <= 2 ? 'dizzy' : 'ok';
     await talk([['xa', res[1]]]);
     xa.mood = 'ok';
-    if (score === n) { Audio.sfx('ok'); await talk([['prof', '完美的提示词！角色、任务、背景、格式、限制，五样齐全，小 A 一下就懂了。']]); closeScreen(this, !this.fails); return; }
+    if (score === n) { Audio.sfx('ok'); await talk([['prof', '这次任务交代清楚了。五栏是检查思路，不是万能咒语；小 A 写完，你还要核对资料和结果。']]); closeScreen(this, !this.fails); return; }
     this.fails = (this.fails || 0) + 1; G.wrong++; unlock('firstwrong'); Audio.sfx('bad');
     const weak = this.cfg.slots.find((s, k) => !this.choice[k].opts[this.choice[k].i].good);
     await talk([['prof', `还差一点。看看【${weak.name}】那一栏：${weak.tip}（点一下那一栏可以换成别的说法）`]]);
@@ -171,46 +171,108 @@ class PromptScreen extends Screen {
   }
 }
 
-/* ---------- 幻觉侦探 ----------
- * cfg: { facts:[...], claims:[{t, real, why}] }
+/* ---------- 幻觉侦探：逐条对照原文，区分证实、矛盾和未核实 ----------
+ * cfg: { facts:[...], claims:[{t, verdict:'supported'|'contradicted'|'unverified', why}] }
+ * 兼容旧数据中的 real；资料没有写过，不等于已经证伪。
  */
 class HalluScreen extends Screen {
-  constructor(cfg) { super(); this.cfg = cfg; this.marks = cfg.claims.map(() => 0); this.mk(); }
+  constructor(cfg) { super(); this.cfg = cfg; this.marks = cfg.claims.map(() => 0); this.i = 0; this.mk(); }
+  verdict(c) { return c.verdict || (c.real ? 'supported' : 'contradicted'); }
   mk() {
-    const f = this.focus;
-    this.btns = this.cfg.claims.map((c, i) => new Btn({ label: ['？', '真的', '编的'][this.marks[i]], w: 44, h: 18, style: this.marks[i] ? 'primary' : 'btn', onPress: () => { this.marks[i] = this.marks[i] === 1 ? 2 : 1; Audio.sfx('move'); this.mk(); } }));
-    this.btns.push(new Btn({ label: '交给侦探 ▶', w: 96, h: 20, style: 'primary', onPress: () => this.submit() }));
-    this.focus = f || 0;
+    this.btns = [['有依据', 'supported'], ['相矛盾', 'contradicted'], ['待核实', 'unverified']].map(([label, verdict]) => new Btn({ label, verdict, w: 68, h: 22, onPress: b => this.submit(b) }));
+    this.focus = 0;
   }
-  async submit() {
-    if (this.busy) return; this.busy = true;
-    if (this.marks.includes(0)) { Audio.sfx('bad'); await talk([['detective', '每一句都要判断哦：是真的，还是小 A 编的？']]); this.busy = false; return; }
-    const wrongI = this.cfg.claims.findIndex((c, i) => (this.marks[i] === 1) !== c.real);
-    if (wrongI < 0) { Audio.sfx('ok'); await talk([['detective', '全部识破！你已经是合格的幻觉侦探了。']]); closeScreen(this, !this.fails); return; }
-    this.fails = (this.fails || 0) + 1; G.wrong++; unlock('firstwrong'); Audio.sfx('bad'); shake(2);
-    const c = this.cfg.claims[wrongI];
-    await talk([['detective', `第 ${wrongI + 1} 句再看看：${c.why}`]]);
-    this.busy = false;
+  async submit(b) {
+    if (this.busy || !b || b.disabled) return; this.busy = true;
+    const c = this.cfg.claims[this.i], correct = b.verdict === this.verdict(c);
+    b.state = correct ? 'right' : 'wrong'; Audio.sfx(correct ? 'ok' : 'bad');
+    if (!correct) {
+      this.fails = (this.fails || 0) + 1; G.wrong++; unlock('firstwrong'); b.disabled = true;
+      await talk([['detective', '再对照原文：' + c.why]]);
+      this.busy = false; this.focus = this.btns.findIndex(x => !x.disabled); return;
+    }
+    this.marks[this.i] = b.verdict; this.btns.forEach(x => x.disabled = true);
+    await talk([['detective', c.why]]);
+    this.i++;
+    if (this.i >= this.cfg.claims.length) {
+      await talk([['detective', '核验完成！原文支持的才采信，相矛盾的要纠正，资料不够的就继续查。']]);
+      closeScreen(this, !this.fails); return;
+    }
+    this.mk(); this.busy = false;
   }
   update(dt) { this.t += dt; if (!this.busy) this.nav(); }
   draw(g) {
     this.dimBg(g, .5);
     const P = PORTRAIT, x = 8, w = VW - 16;
-    const fw = P ? w - 24 : Math.round(w * .36), cw = P ? w - 24 : w - fw - 36;
+    const fw = P ? w - 24 : Math.round(w * .42), cw = P ? w - 24 : w - fw - 36;
     const F = []; this.cfg.facts.forEach(f => wrap('· ' + f, fw - 12, '#2a2030').forEach(l => F.push(l)));
-    const CL = this.cfg.claims.map((c, i) => wrap(`${i + 1}. ${c.t}`, cw - 66, UIC.text));
-    const clH = CL.reduce((a, l) => a + Math.max(20, l.length * 13 + 6) + 3, 0);
+    const c = this.cfg.claims[Math.min(this.i, this.cfg.claims.length - 1)];
+    const CL = wrap(c.t, cw - 16, UIC.text), claimH = CL.length * LH + 30;
     const factH = F.length * 13 + 24;
-    const h = 44 + (P ? factH + 10 + clH : Math.max(factH, clH)) + 38, y = Math.max(4, Math.round((VH - 60 - h) / 2));
-    win(g, x, y, w, h); head(g, 'detective', '幻觉侦探：哪几句是小 A 编的？', x, y);
+    const workH = claimH + 3 * 27 + 20;
+    const h = 50 + (P ? factH + 10 + workH : Math.max(factH, workH)), y = Math.max(4, Math.round((VH - h) / 2));
+    win(g, x, y, w, h); head(g, 'detective', '老 K 的核验台', x, y);
+    txt(g, `${Math.min(this.i + 1, this.cfg.claims.length)}/${this.cfg.claims.length}`, x + w - 12, y + 11, UIC.dim, { align: 'right' });
     const fx2 = x + 12, fy = y + 40;
     g.fillStyle = '#f6ecd2'; g.fillRect(fx2, fy, fw, factH); g.fillStyle = '#c9b088'; g.fillRect(fx2, fy, fw, 2);
-    txt(g, '村子档案（真的）', fx2 + 6, fy + 4, '#b5521b', { shadow: null });
+    txt(g, '已核验的店主原文', fx2 + 6, fy + 4, '#b5521b', { shadow: null });
     drawLines(g, F, fx2 + 6, fy + 19, { lh: 13, shadow: null });
     let cx = P ? x + 12 : fx2 + fw + 12, cy = P ? fy + factH + 10 : fy;
-    CL.forEach((L, i) => { const hh = Math.max(20, L.length * 13 + 6); g.fillStyle = '#0e1a34'; g.fillRect(cx, cy, cw, hh); drawLines(g, L, cx + 6, cy + 4, { lh: 13 }); const b = this.btns[i]; b.x = cx + cw - b.w - 4; b.y = cy + Math.round((hh - 18) / 2); cy += hh + 3; });
-    const go = this.btns[this.btns.length - 1]; go.x = x + w - go.w - 10; go.y = y + h - 28;
+    g.fillStyle = '#0e1a34'; g.fillRect(cx, cy, cw, claimH);
+    txt(g, '小 A 的说法', cx + 8, cy + 5, UIC.sky); drawLines(g, CL, cx + 8, cy + 22);
+    cy += claimH + 7;
+    this.btns.forEach((b, i) => { b.x = cx + 4; b.y = cy + i * 27; b.w = cw - 8; });
     this.btns.forEach((b, i) => b.draw(g, i === this.focus && !this.busy && Input.device !== 'touch', this.t));
+  }
+}
+
+/* ---------- 智能体值班台：看委托、选行动、核对回执 ----------
+ * 每一步有真实可读的后果；失误可以重试，不跳过关键权限判断。
+ */
+class AgentDeskScreen extends Screen {
+  constructor(cfg) { super(); this.cfg = cfg; this.i = 0; this.fails = 0; this.receipts = []; this.mk(); }
+  mk() {
+    this.round = this.cfg.rounds[this.i]; this.feedback = null;
+    this.btns = shuffle(this.round.choices.slice()).map(c => new Btn({ label: c.t, choice: c, align: 'left', h: 22, onPress: b => this.choose(b) }));
+    this.focus = 0;
+  }
+  choose(b) {
+    if (this.feedback || b.disabled) return;
+    const c = b.choice; this.feedback = c; this.btns = [];
+    Audio.sfx(c.ok ? 'ok' : 'bad');
+    if (!c.ok) { this.fails++; G.wrong++; unlock('firstwrong'); }
+    else this.receipts.push(c.receipt);
+    this.btns = [new Btn({ label: c.ok ? (this.i === this.cfg.rounds.length - 1 ? '交接完成 ▶' : '下一步 ▶') : '重新安排', w: 100, h: 22, style: 'primary', onPress: () => {
+      if (c.ok) this.i++;
+      if (this.i >= this.cfg.rounds.length) { closeScreen(this, !this.fails); return; }
+      this.mk();
+    } })]; this.focus = 0;
+  }
+  update(dt) { this.t += dt; this.nav(); }
+  draw(g) {
+    this.dimBg(g, .55);
+    const x = 8, w = VW - 16, inner = w - 24, r = this.round;
+    const job = wrap(r.brief, inner - 16, UIC.paperInk), jobH = job.length * LH + 14;
+    const q = wrap(r.q, inner), feedback = this.feedback;
+    let bodyH;
+    if (feedback) bodyH = wrap(feedback.receipt, inner - 16).length * LH + wrap(feedback.why, inner).length * LH + 66;
+    else {
+      this.btns.forEach(b => { b.w = inner; b.pad = 10; b.lines = wrap(b.label, inner - 24); b.h = Math.max(22, b.lines.length * 13 + 8); });
+      bodyH = this.btns.reduce((n, b) => n + b.h + 5, 0) + 8;
+    }
+    const h = 46 + jobH + 10 + q.length * LH + 9 + bodyH, y = Math.max(4, Math.round((VH - h) / 2));
+    win(g, x, y, w, h); head(g, 'runner', '智能体值班台', x, y);
+    txt(g, `${this.i + 1}/${this.cfg.rounds.length}`, x + w - 12, y + 11, UIC.dim, { align: 'right' });
+    let yy = y + 40;
+    win(g, x + 12, yy, inner, jobH, 'paper'); drawLines(g, job, x + 20, yy + 7, { shadow: null }); yy += jobH + 10;
+    drawLines(g, q, x + 12, yy); yy += q.length * LH + 9;
+    if (feedback) {
+      const lines = wrap(feedback.receipt, inner - 16, feedback.ok ? UIC.mint : UIC.rose), hh = lines.length * LH + 14;
+      win(g, x + 12, yy, inner, hh, 'dark'); drawLines(g, lines, x + 20, yy + 7); yy += hh + 7;
+      drawLines(g, wrap(feedback.why, inner, UIC.dim), x + 12, yy);
+      this.btns[0].x = x + w - 112; this.btns[0].y = y + h - 30;
+    } else this.btns.forEach(b => { b.x = x + 12; b.y = yy; yy += b.h + 5; });
+    this.drawBtns(g);
   }
 }
 
@@ -222,7 +284,7 @@ const ARCH = [
   { id: 'backend', x: .83, y: .14, q: '真正算钱、处理订单的"后厨"是？', why: '算钱、查密码这些活儿在后端干。' },
   { id: 'db', x: .83, y: .48, q: '订单和账号长期存在哪儿？', why: '长期保存的东西放进数据库。' },
   { id: 'llm', x: .58, y: .48, q: 'AI 客服的"大脑"是什么？', why: 'AI 客服背后是大模型。' },
-  { id: 'rag', x: .33, y: .48, q: '让 AI 客服按店里的菜单回答、不瞎编，要给它配？', why: '给大模型配上知识库，它就先查资料再回答。' },
+  { id: 'rag', x: .33, y: .48, q: '让 AI 客服先查现行菜单再回答，用什么流程？', why: 'RAG：检索资料再生成回答，重要结果仍需核对来源。' },
   { id: 'git', x: .08, y: .82, q: '每次改代码前，用什么存档？', why: '用 Git 存档，改坏了也能回去。' },
   { id: 'deploy', x: .41, y: .82, q: '把代码放到服务器上、让大家都能用，这一步叫？', why: '这一步叫部署（上线）。' },
   { id: 'domain', x: .74, y: .82, q: '大家记住的网址 duckduck.app 是什么？', why: '好记的网址就是域名。' },

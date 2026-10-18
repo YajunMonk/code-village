@@ -1,0 +1,276 @@
+{
+  "counting": "Non-whitespace Unicode characters in spoken/narrated lines and comic line/caption; UI labels, quiz choices, tooltips and 70_main intro excluded.",
+  "openingToWorldControl": {
+    "frames": 3,
+    "comicCharacters": 146,
+    "chapter": 0,
+    "dialogueTurns": 8,
+    "dialogueCharacters": 246,
+    "exerciseScreens": 1,
+    "termCards": 2
+  },
+  "firstTaskBeforeExercise": {
+    "dialogueTurns": 5,
+    "dialogueCharacters": 132,
+    "exerciseScreens": 0,
+    "termCards": 0
+  },
+  "chapters": [
+    {
+      "chapter": 0,
+      "dialogueTurns": 8,
+      "dialogueCharacters": 246,
+      "exerciseScreens": 1,
+      "termCards": 2
+    },
+    {
+      "chapter": 1,
+      "dialogueTurns": 9,
+      "dialogueCharacters": 256,
+      "exerciseScreens": 1,
+      "termCards": 1
+    },
+    {
+      "chapter": 2,
+      "dialogueTurns": 10,
+      "dialogueCharacters": 307,
+      "exerciseScreens": 2,
+      "termCards": 2
+    },
+    {
+      "chapter": 3,
+      "dialogueTurns": 13,
+      "dialogueCharacters": 346,
+      "exerciseScreens": 1,
+      "termCards": 2
+    },
+    {
+      "chapter": 4,
+      "dialogueTurns": 6,
+      "dialogueCharacters": 149,
+      "exerciseScreens": 1,
+      "termCards": 0
+    },
+    {
+      "chapter": 5,
+      "dialogueTurns": 12,
+      "dialogueCharacters": 370,
+      "exerciseScreens": 3,
+      "termCards": 3
+    },
+    {
+      "chapter": 6,
+      "dialogueTurns": 10,
+      "dialogueCharacters": 307,
+      "exerciseScreens": 4,
+      "termCards": 3
+    },
+    {
+      "chapter": 7,
+      "dialogueTurns": 7,
+      "dialogueCharacters": 249,
+      "exerciseScreens": 1,
+      "termCards": 3
+    },
+    {
+      "chapter": 8,
+      "dialogueTurns": 7,
+      "dialogueCharacters": 200,
+      "exerciseScreens": 2,
+      "termCards": 2
+    },
+    {
+      "chapter": 9,
+      "dialogueTurns": 6,
+      "dialogueCharacters": 147,
+      "exerciseScreens": 1,
+      "termCards": 0
+    },
+    {
+      "chapter": 10,
+      "dialogueTurns": 11,
+      "dialogueCharacters": 326,
+      "exerciseScreens": 2,
+      "termCards": 3
+    },
+    {
+      "chapter": 11,
+      "dialogueTurns": 12,
+      "dialogueCharacters": 336,
+      "exerciseScreens": 1,
+      "termCards": 2
+    },
+    {
+      "chapter": 12,
+      "dialogueTurns": 8,
+      "dialogueCharacters": 270,
+      "exerciseScreens": 1,
+      "termCards": 1
+    },
+    {
+      "chapter": 13,
+      "dialogueTurns": 11,
+      "dialogueCharacters": 330,
+      "exerciseScreens": 1,
+      "termCards": 2
+    },
+    {
+      "chapter": 14,
+      "dialogueTurns": 13,
+      "dialogueCharacters": 380,
+      "exerciseScreens": 2,
+      "termCards": 2
+    },
+    {
+      "chapter": 15,
+      "dialogueTurns": 6,
+      "dialogueCharacters": 172,
+      "exerciseScreens": 1,
+      "termCards": 0
+    },
+    {
+      "chapter": 16,
+      "dialogueTurns": 10,
+      "dialogueCharacters": 351,
+      "exerciseScreens": 2,
+      "termCards": 3
+    },
+    {
+      "chapter": 17,
+      "dialogueTurns": 6,
+      "dialogueCharacters": 200,
+      "exerciseScreens": 2,
+      "termCards": 1
+    },
+    {
+      "chapter": 18,
+      "dialogueTurns": 7,
+      "dialogueCharacters": 223,
+      "exerciseScreens": 2,
+      "termCards": 2
+    },
+    {
+      "chapter": 19,
+      "dialogueTurns": 6,
+      "dialogueCharacters": 210,
+      "exerciseScreens": 2,
+      "termCards": 2
+    },
+    {
+      "chapter": 20,
+      "dialogueTurns": 6,
+      "dialogueCharacters": 175,
+      "exerciseScreens": 1,
+      "termCards": 0
+    },
+    {
+      "chapter": 21,
+      "dialogueTurns": 6,
+      "dialogueCharacters": 188,
+      "exerciseScreens": 1,
+      "termCards": 2
+    },
+    {
+      "chapter": 22,
+      "dialogueTurns": 5,
+      "dialogueCharacters": 175,
+      "exerciseScreens": 2,
+      "termCards": 1
+    },
+    {
+      "chapter": 23,
+      "dialogueTurns": 10,
+      "dialogueCharacters": 293,
+      "exerciseScreens": 4,
+      "termCards": 1
+    },
+    {
+      "chapter": 24,
+      "dialogueTurns": 8,
+      "dialogueCharacters": 194,
+      "exerciseScreens": 1,
+      "termCards": 1
+    },
+    {
+      "chapter": 25,
+      "dialogueTurns": 14,
+      "dialogueCharacters": 309,
+      "exerciseScreens": 1,
+      "termCards": 1
+    },
+    {
+      "chapter": 26,
+      "dialogueTurns": 7,
+      "dialogueCharacters": 166,
+      "exerciseScreens": 1,
+      "termCards": 0
+    }
+  ],
+  "mainRoute": {
+    "dialogueTurns": 234,
+    "dialogueCharacters": 6875,
+    "exerciseScreens": 44,
+    "termCards": 42
+  },
+  "comics": {
+    "arrival": {
+      "frames": 3,
+      "characters": 146
+    },
+    "network": {
+      "frames": 2,
+      "characters": 96
+    },
+    "evidence": {
+      "frames": 3,
+      "characters": 147
+    },
+    "workshop": {
+      "frames": 2,
+      "characters": 92
+    },
+    "launch": {
+      "frames": 2,
+      "characters": 90
+    },
+    "farewell": {
+      "frames": 3,
+      "characters": 141
+    }
+  },
+  "defaultOpeningReading": {
+    "comicCharacters": 146,
+    "dialogueCharacters": 246,
+    "quizAndCorrectFeedbackCharacters": 73,
+    "termCardCharacters": 165,
+    "totalCharacters": 630,
+    "contentNodes": 15
+  },
+  "openingExtraTextEvidence": {
+    "quizText": [
+      "氛围编程里，你最重要的工作是什么？",
+      "说清楚想要什么，再检查 AI 做得对不对",
+      "把代码一行一行背下来",
+      "什么都不管，AI 全包",
+      "答对了！你是老板，我是干活的实习生。"
+    ],
+    "termCards": [
+      {
+        "id": "vibe",
+        "r": 0,
+        "t": "氛围编程",
+        "a": "点菜，不用自己下厨",
+        "d": "用大白话告诉 AI 你想要什么，让 AI 写代码，你负责看效果、提意见。不用会写代码，但要会\"说清楚\"和\"看得懂\"。",
+        "ai": "好的！我来帮你生成一个奶茶点单页面～"
+      },
+      {
+        "id": "program",
+        "r": 0,
+        "t": "程序 / 代码",
+        "a": "一份菜谱",
+        "d": "写给电脑的一串步骤。电脑超听话也超死板，只会一字不差地照着做。AI 帮你写的，就是这份菜谱。",
+        "ai": "这是完整代码，复制到 index.html 里运行即可。"
+      }
+    ]
+  }
+}

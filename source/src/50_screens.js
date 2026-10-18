@@ -17,11 +17,11 @@ function makeLogo(text, scale) {
   const [tint, tx] = makeCanvas(W, H);
   const solidCopy = col => { tx.clearRect(0, 0, W, H); tx.globalCompositeOperation = 'source-over'; tx.drawImage(a, 0, 0, w, h, 4, 4, w * scale, h * scale); tx.globalCompositeOperation = 'source-in'; tx.fillStyle = col; tx.fillRect(0, 0, W, H); return tint; };
   const sh = solidCopy('#1a1222'); for (const [dx, dy] of [[0, 4], [2, 4], [-2, 4], [0, 5]]) x.drawImage(sh, dx, dy);
-  const ol = solidCopy('#3a1e1a'); for (const [dx, dy] of [[-2, 0], [2, 0], [0, -2], [0, 2], [-2, -2], [2, 2], [-2, 2], [2, -2]]) x.drawImage(ol, dx, dy);
-  const ol2 = solidCopy('#b5521b'); for (const [dx, dy] of [[0, 2], [1, 2], [-1, 2]]) x.drawImage(ol2, dx, dy);
+  const ol = solidCopy('#132e36'); for (const [dx, dy] of [[-2, 0], [2, 0], [0, -2], [0, 2], [-2, -2], [2, 2], [-2, 2], [2, -2]]) x.drawImage(ol, dx, dy);
+  const ol2 = solidCopy('#6d8b87'); for (const [dx, dy] of [[0, 2], [1, 2], [-1, 2]]) x.drawImage(ol2, dx, dy);
   // 渐变填充
   tx.clearRect(0, 0, W, H); tx.globalCompositeOperation = 'source-over'; tx.drawImage(a, 0, 0, w, h, 4, 4, w * scale, h * scale); tx.globalCompositeOperation = 'source-in';
-  const gr = tx.createLinearGradient(0, 4, 0, 4 + 12 * scale); gr.addColorStop(0, '#fff6b0'); gr.addColorStop(.45, '#ffd23f'); gr.addColorStop(.5, '#ffb52a'); gr.addColorStop(1, '#ff8a2a');
+  const gr = tx.createLinearGradient(0, 4, 0, 4 + 12 * scale); gr.addColorStop(0, '#fff8de'); gr.addColorStop(.45, '#f1e5c5'); gr.addColorStop(.5, '#d4d9bb'); gr.addColorStop(1, '#b3cec0');
   tx.fillStyle = gr; tx.fillRect(0, 0, W, H);
   x.drawImage(tint, 0, 0);
   // 高光
@@ -33,12 +33,22 @@ function makeLogo(text, scale) {
 /* ---------- 开机：点击开始 ---------- */
 class BootScreen extends Screen {
   constructor(ready) { super(); this.ready = ready; }
-  update(dt) { this.t += dt; if (this.ready() && (Input.hit('ok') || Input.pointer.click || Input.hit('back'))) { Audio.unlock(); closeScreen(this); } }
+  update(dt) {
+    this.t+=dt;const pressed=Input.hit('ok')||Input.pointer.click||Input.hit('back');
+    if(this.ready()&&pressed){Audio.unlock();closeScreen(this);}
+    else if(pressed&&ART_STATUS.errors.length&&!this.retrying){this.retrying=true;loadStoryArt().finally(()=>{this.retrying=false;});}
+  }
   draw(g) {
-    g.fillStyle = '#0b0912'; g.fillRect(0, 0, VW, VH);
+    g.fillStyle = '#091c26'; g.fillRect(0, 0, VW, VH);
     const im = xaFrame(Math.floor(this.t * 3) % 2, 0, 'happy'); g.drawImage(im, Math.round(VW / 2 - 16), Math.round(VH / 2 - 48), 32, 40);
-    if (!this.ready()) { txt(g, '正在搭建代码村' + '.'.repeat(1 + Math.floor(this.t * 3) % 3), VW / 2, VH / 2 + 2, UIC.dim, { align: 'center' }); return; }
-    if (Math.floor(this.t * 2) % 2 === 0 || this.t < .5) txt(g, TOUCH ? '轻点屏幕开始' : '按任意键 / 点击开始', VW / 2, VH / 2 + 2, UIC.text, { align: 'center' });
+    if (!this.ready()) {
+      const failed=ART_STATUS.errors.length&&!ART_STATUS.ready;
+      txt(g,failed?'画面暂未载入':'正在准备旅程',VW/2,VH/2+2,UIC.text,{align:'center'});
+      const w=120,x=Math.round((VW-w)/2),y=Math.round(VH/2+24);
+      g.fillStyle='#294550';g.fillRect(x,y,w,3);g.fillStyle='#b9d5b6';g.fillRect(x,y,Math.round(w*ART_STATUS.loaded/Math.max(1,ART_STATUS.total)),3);
+      txt(g,failed?'轻点或按空格重试':`${ART_STATUS.loaded} / ${ART_STATUS.total}`,VW/2,y+12,UIC.dim,{align:'center'});return;
+    }
+    if (Math.floor(this.t * 2) % 2 === 0 || this.t < .5) txt(g, TOUCH ? '轻点屏幕开始' : '按空格 / 点击开始', VW / 2, VH / 2 + 2, UIC.text, { align: 'center' });
     txt(g, '建议打开声音', VW / 2, VH / 2 + 22, UIC.dim, { align: 'center' });
   }
 }
@@ -50,30 +60,81 @@ class TitleScreen extends Screen {
     const s = loadSave(), has = hasProgress(s), opts = [];
     if (has) opts.push(['继续冒险', () => this.finish('continue')]);
     opts.push(['开始新冒险', async () => { if (hasProgress(loadSave())) { const ok = await confirm('开始新冒险会清空现在的存档，确定吗？'); if (!ok) return; } this.finish('new'); }]);
-    opts.push(['声音设置', () => openScreen(new SoundScreen())]);
+    opts.push(['旅途指南', () => openScreen(new GuideScreen())]);
+    opts.push(['设置与存档', () => openScreen(new SaveScreen({ settings: true }))]);
     this.btns = opts.map(([label, fn]) => new Btn({ label, w: 120, h: 20, onPress: fn }));
     this.focus = 0; this.hasSave = has;
-    this.info = has ? `存档：${REGIONS[regionOf(Math.min(s.done, NZ - 1))].name.split(' · ')[0]} · 术语 ${s.terms.filter(id => TERMS.some(c => c.id === id)).length}/${TERMS.length}` : '';
   }
   finish(v) { closeScreen(this, v); }
   update(dt) { this.t += dt; this.nav(); }
   draw(g) {
-    const gr = g.createLinearGradient(0, 0, 0, VH); gr.addColorStop(0, 'rgba(12,8,30,.15)'); gr.addColorStop(.6, 'rgba(12,8,30,.35)'); gr.addColorStop(1, 'rgba(12,8,30,.85)'); g.fillStyle = gr; g.fillRect(0, 0, VW, VH);
-    const sc = PORTRAIT ? 3 : 4;
-    if (!LOGO || LOGO.s !== sc) { LOGO = makeLogo('代码村大冒险', sc); LOGO.s = sc; }
-    const ly = Math.round((PORTRAIT ? VH * .2 : 30) + Math.sin(this.t * 1.6) * 2);
-    const k = Math.min(1, this.t * 1.5);
-    g.globalAlpha = k; g.drawImage(LOGO, Math.round((VW - LOGO.width) / 2), ly - Math.round((1 - easeOut(k)) * 20));
-    txt(g, '— 0 基础也能玩懂的氛围编程冒险 —', VW / 2, ly + LOGO.height + 2, '#f4e9cc', { align: 'center' });
-    g.globalAlpha = 1;
-    const by = PORTRAIT ? Math.round(VH * .55) : ly + LOGO.height + 30;
-    this.btns.forEach((b, i) => { b.x = Math.round(VW / 2 - b.w / 2); b.y = by + i * 26; });
+    // 手机把完整人物留在菜单上方；菜单高度固定，避免遮住脸或随存档增减跳动。
+    const artHeight = PORTRAIT ? VH - 160 : VH;
+    coverArt(g, 'title-keyart', 0, 0, VW, artHeight, this.t, PORTRAIT ? .88 : .5);
+    const gr = g.createLinearGradient(0, 0, PORTRAIT ? 0 : VW * .72, PORTRAIT ? artHeight : 0);
+    gr.addColorStop(0, PORTRAIT ? 'rgba(5,20,31,.42)' : 'rgba(5,20,31,.88)');
+    gr.addColorStop(.58, PORTRAIT ? 'rgba(5,20,31,.12)' : 'rgba(5,20,31,.58)'); gr.addColorStop(1, 'rgba(5,20,31,.05)');
+    g.fillStyle = gr; g.fillRect(0, 0, VW, artHeight);
+    if (PORTRAIT) {
+      g.fillStyle='#0b1c29';g.fillRect(0,artHeight,VW,160);
+      g.fillStyle='#41545b';g.fillRect(16,artHeight,VW-32,1);
+    }
+    // 字标与菜单共用中轴；有无存档都保持相同字标大小和位置。
+    const columnCenter = PORTRAIT ? VW / 2 : Math.round(VW * .28);
+    const logoW = PORTRAIT ? Math.min(VW - 48, 224) : Math.min(238, VW * .5);
+    const logoH = Math.round(logoW * 570 / 1640);
+    const logoX = Math.round(columnCenter - logoW / 2);
+    const logoY = PORTRAIT ? clamp(Math.round(artHeight * .07), 16, 28) : Math.round(VH * .1);
+    const brand = ART['brand-wordmark'];
+    if (brand) {
+      // 浅色透明字标直接叠在星空上；裁去透明留白，不绘制底板。
+      g.save(); g.imageSmoothingEnabled = true;
+      g.drawImage(brand, 60, 185, 1640, 570, logoX, logoY, Math.round(logoW), logoH);
+      g.restore();
+    } else {
+      // 字标在后台加载；失败时仍能读到游戏名并开始游玩。
+      const sc = PORTRAIT || VW < 450 ? 3 : 4;
+      if (!LOGO || LOGO.s !== sc) { LOGO = makeLogo(GAME_TITLE, sc); LOGO.s = sc; }
+      g.drawImage(LOGO, Math.round(columnCenter - LOGO.width / 2), Math.round(logoY + (logoH - LOGO.height) / 2));
+    }
+    const by = PORTRAIT ? VH - 132 : Math.min(Math.round(VH * .48), VH - this.btns.length * 25 - 30);
+    const buttonStep = PORTRAIT ? 46 : 25;
+    const menuW = Math.min(VW - 32, 248), menuX = Math.round((VW - menuW) / 2), half = Math.floor((menuW - 8) / 2);
+    this.btns.forEach((b, i) => {
+      if (PORTRAIT) {
+        const full = !this.hasSave && i === 0, slot = this.hasSave ? i : i + 1;
+        b.x = full ? menuX : menuX + (slot % 2) * (half + 8);
+        b.y = by + (full ? 0 : Math.floor(slot / 2)) * buttonStep;
+        b.w = full ? menuW : half;b.h = 40;
+      } else {b.x = columnCenter - 84;b.y = by + i * buttonStep;b.w = 168;b.h = 21;}
+      b.style = i === 0 ? 'primary' : 'btn';
+    });
     this.drawBtns(g);
-    if (this.info) txt(g, this.info, VW / 2, by + this.btns.length * 26 + 4, 'rgba(244,233,204,.75)', { align: 'center' });
-    txt(g, 'v3.1', VW - 6, VH - 16, 'rgba(244,233,204,.5)', { align: 'right', shadow: null });
-    txt(g, TOUCH ? '轻点选择' : '方向键选择 · 空格确认', 6, VH - 16, 'rgba(244,233,204,.6)', { shadow: null });
+    txt(g, GAME_VERSION, VW - 12, VH - 18, '#b5c9c9', { align: 'right' });
+    if (PORTRAIT) txt(g, '触屏走动 · A 键互动', menuX, VH - 34, '#b5c9c9');
+    else txt(g, '方向键选择 · 空格确认', 12, VH - 18, '#b5c9c9');
+    if (!reducedMotion()) for (let i = 0; i < 16; i++) {
+      g.globalAlpha = .2 + Math.max(0, Math.sin(this.t + i * 2)) * .65;
+      g.fillStyle = '#ffe3a3'; g.fillRect(Math.round(VW * (.5 + hash2(i, 7) * .5)), Math.round(artHeight * hash2(i, 4) + Math.sin(this.t * .5 + i) * 3), 1, 1);
+    }
+    g.globalAlpha = 1;
   }
 }
+class GuideScreen extends Screen {
+  constructor() { super(); this.btns = [new Btn({label: '准备好了', w: 90, h: 22, style: 'primary', onPress: () => closeScreen(this)})]; }
+  update(dt) { this.t += dt; if (Input.hit('back')) { closeScreen(this); return; } this.nav(); }
+  draw(g) {
+    this.dimBg(g, .85); const w = Math.min(VW - 24, 390), x = Math.round((VW - w) / 2);
+    const lines = ['你是不响，星灯镇今晚需要一点帮助。', '方向键 / WASD 走路，Shift 跑步', '靠近人物或房门，空格 / 回车互动', 'Q 手记：地图、人物、回忆与串门', 'C 术语图鉴 · Esc 暂停 · M 静音', '手机：触屏方向键走路，A 键互动', '过关自动存档；已抵达地点可快速返回。', '故事可慢读；两场速答可反复尝试。'];
+    const rows = lines.map((l, i) => wrap(l, w - 32, i === 0 ? '#a8d8ca' : UIC.text));
+    const h = 75 + rows.reduce((sum, ls) => sum + ls.length * 13 + 5, 0), y = Math.max(6, Math.round((VH - h) / 2));
+    win(g, x, y, w, h, 'dark'); txt(g, '旅途指南', x + 16, y + 12, UIC.gold);
+    let yy = y + 36;
+    rows.forEach(ls => { drawLines(g, ls, x + 16, yy, {lh: 13}); yy += ls.length * 13 + 5; });
+    this.btns[0].x = x + w - 106; this.btns[0].y = y + h - 30; this.drawBtns(g);
+  }
+}
+
 class SoundScreen extends Screen {
   constructor() { super(); this.mk(); }
   mk() {
@@ -89,6 +150,151 @@ class SoundScreen extends Screen {
     const w = 170, h = 112, x = Math.round((VW - w) / 2), y = Math.round((VH - h) / 2);
     win(g, x, y, w, h); txt(g, '声音设置', VW / 2, y + 8, UIC.gold, { align: 'center' });
     this.btns.forEach((b, i) => { b.x = x + 20; b.y = y + 28 + i * 26; }); this.drawBtns(g);
+  }
+}
+
+/* 文件操作使用真实 DOM 点击，保留手机选择文件、下载和分享所需的用户激活。 */
+class SaveScreen extends Screen {
+  constructor({ settings = false } = {}) { super(); this.settings = settings; this.readToken = 0; this.pending = null; }
+  onOpen() {
+    this.active = true; this.previousFocus = document.activeElement; Input.reset();
+    this.root = document.createElement('div'); this.root.className = 'save-overlay';
+    this.root.innerHTML = `<section class="save-panel" role="dialog" aria-modal="true" aria-labelledby="save-heading" tabindex="-1">
+      <header class="save-header"><div><p class="save-eyebrow">代码物语</p><h1 id="save-heading">${this.settings ? '设置与存档' : '存档管理'}</h1></div><button type="button" data-save="close" class="save-close" aria-label="关闭存档管理">×</button></header>
+      <div class="save-content">
+        <section class="save-current" aria-labelledby="save-current-label"><h2 id="save-current-label">本机进度</h2><p class="save-chapter" data-save="chapter"></p><p class="save-meta" data-save="progress"></p><p class="save-date" data-save="saved-at"></p></section>
+        <div class="save-actions"><button type="button" data-save="save" class="save-primary">立即保存</button><button type="button" data-save="export">导出备份</button><button type="button" data-save="choose">选择存档文件</button><button type="button" data-save="share" hidden>分享存档</button></div>
+        <input type="file" data-save="file" accept=".json,application/json" hidden aria-label="选择 JSON 存档文件">
+        <p class="save-help">进度保存在当前浏览器。换设备时，把备份文件传过去，再导入即可。</p>
+        <button type="button" data-save="recovery" class="save-recovery" hidden>恢复上次导入前的进度</button>
+        <section class="save-preview" data-save="preview" aria-labelledby="save-preview-heading" hidden tabindex="-1"><h2 id="save-preview-heading" data-save="preview-heading"></h2><p class="save-file" data-save="filename"></p><p class="save-chapter" data-save="preview-chapter"></p><p class="save-meta" data-save="preview-progress"></p><p class="save-date" data-save="preview-date"></p><p class="save-confirm-copy" data-save="confirm-copy"></p><div class="save-actions"><button type="button" data-save="confirm" class="save-primary"></button><button type="button" data-save="cancel">取消</button></div></section>
+        <p class="save-status" data-save="status" role="status" aria-live="polite" aria-atomic="true"></p>
+        <section class="save-sound" aria-labelledby="save-sound-label"><h2 id="save-sound-label">声音</h2><div class="save-actions"><button type="button" data-save="music"></button><button type="button" data-save="effects"></button></div></section>
+        <button type="button" data-save="home" class="save-recovery" hidden>返回湖畔</button>
+      </div>
+      <footer class="save-footer"><span>冒险中会自动保存</span><button type="button" data-save="back">${this.settings ? '返回首页' : '返回游戏菜单'}</button></footer>
+    </section>`;
+    this.nodes = {}; this.root.querySelectorAll('[data-save]').forEach(el => { this.nodes[el.dataset.save] = el; });
+    this.panel = this.root.querySelector('.save-panel');
+    this.background = [cv, touchBox, document.getElementById('tin')].filter(Boolean).map(el => ({ el, inert: el.inert, aria: el.getAttribute('aria-hidden') }));
+    this.background.forEach(({ el }) => { el.inert = true; el.setAttribute('aria-hidden', 'true'); });
+    document.body.appendChild(this.root);
+    const on = (id, fn) => this.nodes[id].addEventListener('click', () => { if (this.active) { Audio.unlock(); fn(); } });
+    on('close', () => closeScreen(this)); on('back', () => closeScreen(this));
+    on('save', () => this.saveNow()); on('export', () => this.exportFile());
+    on('choose', () => this.nodes.file.click()); on('share', () => this.shareFile());
+    on('recovery', () => this.previewRecovery()); on('confirm', () => this.commit()); on('cancel', () => this.cancelPreview());
+    on('music', () => { Audio.setMusic(!Audio.music); this.refreshSound(); });
+    on('effects', () => { Audio.setSfx(!Audio.effects); this.refreshSound(); });
+    on('home', () => this.returnToLake()); this.nodes.home.hidden = !this.hasLakeEntry();
+    this.nodes.file.addEventListener('change', () => this.readFile(this.nodes.file.files[0]));
+    this.root.addEventListener('keydown', e => {
+      e.stopPropagation();
+      if (e.key === 'Escape') { e.preventDefault(); if (this.pending) this.cancelPreview(); else closeScreen(this); }
+      if (e.key === 'Tab') {
+        const focusable = [...this.root.querySelectorAll('button:not(:disabled)')].filter(el => !el.hidden && !el.closest('[hidden]'));
+        const first = focusable[0], last = focusable[focusable.length - 1];
+        if (e.shiftKey && (document.activeElement === first || document.activeElement === this.panel)) { e.preventDefault(); last?.focus(); }
+        else if (!e.shiftKey && (document.activeElement === last || !this.root.contains(document.activeElement))) { e.preventDefault(); first?.focus(); }
+      }
+    });
+    this.root.addEventListener('keyup', e => e.stopPropagation());
+    this.root.addEventListener('pointerdown', e => e.stopPropagation());
+    try { this.nodes.share.hidden = !(navigator.share && navigator.canShare && typeof File === 'function' && navigator.canShare({ files: [new File(['{}'], '存档.json', { type: 'application/json' })] })); } catch (e) { this.nodes.share.hidden = true; }
+    this.nodes.choose.classList.toggle('save-wide', this.nodes.share.hidden);
+    this.refresh(); this.panel.focus();
+  }
+  onClose() {
+    this.active = false; this.readToken++; this.pending = null; this.root?.remove();
+    this.background?.forEach(({ el, inert, aria }) => { el.inert = inert; if (aria === null) el.removeAttribute('aria-hidden'); else el.setAttribute('aria-hidden', aria); });
+    Input.reset(); const target = this.previousFocus?.isConnected ? this.previousFocus : cv; target?.focus({ preventScroll: true });
+  }
+  update(dt) { this.t += dt; }
+  draw(g) { this.dimBg(g, .3); }
+  date(value) { return value ? new Date(value).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) : '暂无时间记录'; }
+  progress(summary) { const minutes = Math.floor(summary.seconds / 60); return `术语 ${summary.terms} 个 · 旅途 ${minutes < 1 ? '不足 1 分钟' : `${minutes} 分钟`}`; }
+  status(message = '', error = false) { if (!this.active) return; this.nodes.status.textContent = message; this.nodes.status.classList.toggle('is-error', error); }
+  refreshSound() {
+    this.nodes.music.textContent = `背景音乐：${Audio.music ? '开' : '关'}`; this.nodes.music.setAttribute('aria-pressed', String(Audio.music));
+    this.nodes.effects.textContent = `音效：${Audio.effects ? '开' : '关'}`; this.nodes.effects.setAttribute('aria-pressed', String(Audio.effects));
+  }
+  refresh() {
+    let summary = null;
+    try { summary = SaveTransfer.currentSummary(); } catch (e) { this.status(e.message, true); }
+    this.nodes.chapter.textContent = summary ? summary.chapter : '还没有存档';
+    this.nodes.progress.textContent = summary ? this.progress(summary) : '开始冒险后，进度会自动保存在这里。';
+    this.nodes['saved-at'].textContent = summary ? `最近保存：${this.date(summary.savedAt)}` : '';
+    this.nodes.save.disabled = scene !== 'world'; this.nodes.export.disabled = !summary; this.nodes.share.disabled = !summary;
+    try { this.nodes.recovery.hidden = !SaveTransfer.recovery(); } catch (e) { this.nodes.recovery.hidden = true; this.status(e.message, true); }
+    this.refreshSound();
+  }
+  saveNow() {
+    if (scene !== 'world') return;
+    if (save(true)) { this.refresh(); this.status('已保存到本机浏览器。'); Audio.sfx('ok'); }
+    else this.status('保存失败。请先导出备份，并保持游戏打开。', true);
+  }
+  hasLakeEntry() { return typeof location !== 'undefined' && /^\/game\/(?:index\.html)?$/.test(location.pathname); }
+  returnToLake() {
+    if (!this.active || !this.hasLakeEntry()) return;
+    if (scene === 'world' && !save(true)) {
+      this.status('保存失败，已留在游戏。请先导出备份，再重试保存。', true);
+      this.nodes.status.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+      return;
+    }
+    location.assign('/');
+  }
+  exportFile() {
+    let url;
+    try {
+      const output = SaveTransfer.exportCurrent();
+      url = URL.createObjectURL(new Blob([output.text], { type: 'application/json' }));
+      const link = document.createElement('a'); link.href = url; link.download = output.filename; link.hidden = true; this.root.appendChild(link); link.click(); link.remove();
+      this.status('已发起下载，请在“文件”或“下载”中确认。');
+    } catch (e) { this.status(typeof e.code === 'string' ? e.message : '未能生成备份，请重试。', true); }
+    finally { if (url) setTimeout(() => URL.revokeObjectURL(url), 60000); }
+  }
+  async shareFile() {
+    try {
+      const output = SaveTransfer.exportCurrent(), file = new File([output.text], output.filename, { type: 'application/json' });
+      await navigator.share({ files: [file], title: '代码物语 · 存档备份' });
+      if (this.active) this.status('已交给系统分享。请确认已存到文件或发送给另一台设备。');
+    } catch (e) { if (this.active) this.status(e.name === 'AbortError' ? '已取消分享，当前进度未改动。' : (typeof e.code === 'string' ? e.message : '分享不可用，请使用“导出备份”。'), e.name !== 'AbortError'); }
+  }
+  async readFile(file) {
+    if (!this.active || !file) return;
+    const token = ++this.readToken; this.pending = null; this.nodes.preview.hidden = true; this.nodes.file.value = '';
+    if (file.size > SaveTransfer.MAX_BYTES) { this.status('文件超过 128 KB，请选择游戏导出的 JSON 存档。', true); return; }
+    this.status('正在读取存档…');
+    try {
+      const text = await file.text(); if (!this.active || token !== this.readToken) return;
+      const parsed = SaveTransfer.parse(text); this.pending = { kind: 'import', state: parsed.state, summary: parsed.summary };
+      this.preview(parsed.summary, file.name, parsed.legacy ? '旧版存档预览' : '导入预览', '确认导入并回到首页', '导入会替换本机进度；替换前会自动留一份恢复备份。');
+    } catch (e) { if (this.active && token === this.readToken) this.status(typeof e.code === 'string' ? e.message : '文件读取失败，请重新选择。', true); }
+  }
+  preview(summary, filename, heading, label, copy) {
+    this.nodes['preview-heading'].textContent = heading; this.nodes.filename.textContent = filename;
+    this.nodes['preview-chapter'].textContent = summary.chapter; this.nodes['preview-progress'].textContent = this.progress(summary);
+    this.nodes['preview-date'].textContent = `存档时间：${this.date(summary.savedAt)}`;
+    this.nodes['confirm-copy'].textContent = copy; this.nodes.confirm.textContent = label; this.nodes.preview.hidden = false;
+    this.status(''); this.nodes.preview.focus({ preventScroll: true }); this.nodes.preview.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+  }
+  previewRecovery() {
+    try {
+      const backup = SaveTransfer.recovery(); if (!backup) { this.status('还没有可恢复的导入前存档。'); return; }
+      this.readToken++; this.pending = { kind: 'restore', summary: backup.summary };
+      this.preview(backup.summary, `备份时间：${this.date(backup.createdAt)}`, '恢复进度预览', '确认恢复并回到首页', '恢复会替换当前进度。需要保留当前进度时，请先导出备份。');
+    } catch (e) { this.status(e.message, true); }
+  }
+  cancelPreview() { this.readToken++; this.pending = null; this.nodes.preview.hidden = true; this.status('已取消，当前进度未改动。'); this.nodes.choose.focus({ preventScroll: true }); }
+  commit() {
+    if (!this.active || !this.pending) return;
+    try {
+      const restored = this.pending.kind === 'restore', result = restored ? SaveTransfer.restore() : SaveTransfer.import(this.pending.state);
+      // 同步接管内存和落点，再退出旧画面；失焦自动保存不会写回导入前的 G。
+      G = result.state; player.x = G.px; player.y = G.py; Input.reset();
+      for (const screen of [...screens].reverse()) closeScreen(screen);
+      goTitle(); toast(restored ? '已恢复进度，选择“继续冒险”' : '已导入进度，选择“继续冒险”', UIC.mint);
+    } catch (e) { this.status(e.message || '存档未能写入，请重试。', true); this.refresh(); }
   }
 }
 class ConfirmScreen extends Screen {
@@ -150,9 +356,10 @@ class CardScreen extends Screen {
 }
 function giveTerms(ids) {
   const list = [];
-  ids.forEach(id => { if (!G.terms.includes(id)) G.terms.push(id); list.push(findTerm(id)); });
+  ids.forEach(id => { const term=findTerm(id); if(term&&!G.terms.includes(id)){G.terms.push(id);list.push(term);} });
   save(); checkCollectAch();
-  return openScreen(new CardScreen(list));
+  if(list.length){Audio.sfx('card');toast(`图鉴 +${list.length} · ${TOUCH?'点右上角查看':'C 键查看'}`,UIC.mint);}
+  return Promise.resolve();
 }
 
 /* ---------- 术语图鉴 ---------- */
@@ -222,9 +429,9 @@ let appNew = false;
 const APP_STEPS = [
   { t: '想清楚要做什么', d: '写下需求，画出原型，挑出 MVP（最小可用版本）。', k: ['req', 'proto', 'mvp'] },
   { t: '网页和后厨搭起来了', d: '前端能看菜单、下单；后端算钱；数据库记住每一笔订单。', k: ['frontend', 'backend', 'db', 'api'] },
-  { t: '请来了 AI 客服', d: '大模型 + 提示词 + 知识库：会按店里的菜单推荐奶茶，不瞎编。', k: ['llm', 'prompt', 'rag'] },
+  { t: '请来了 AI 客服', d: '大模型 + 提示词 + 知识库：查店里的菜单后回答；缺少依据时先核实。', k: ['llm', 'prompt', 'rag'] },
   { t: '改代码不怕出事了', d: '每次改动都存档；密钥锁进保险箱；有测试兜底。', k: ['git', 'env', 'test'] },
-  { t: '正式上线！', d: '部署到服务器，绑上域名，全世界都能打开。', k: ['deploy', 'domain', 'rollback'] },
+  { t: '正式上线！', d: '部署并检查访问权限，让顾客能打开和试用。', k: ['deploy', 'domain', 'rollback'] },
 ];
 function drawPhone(g, x, y, w, h, stage, t) {
   g.fillStyle = 'rgba(6,4,14,.5)'; g.fillRect(x + 4, y + 5, w, h);
@@ -261,35 +468,37 @@ function drawPhone(g, x, y, w, h, stage, t) {
       g.fillStyle = '#dff6ff'; g.fillRect(sx + 4, yy, sw - 8, 30); g.drawImage(xaFrame(0, Math.floor(t * 4) % 2, 'happy'), sx + 5, yy + 4, 14, 18);
       const L = wrap('推荐你试试少糖的抹茶拿铁～', sw - 30, '#1a4a6a'); drawLines(g, L.slice(0, 2), sx + 22, yy + 3, { shadow: null, lh: 13 }); yy += 34;
     }
-    if (stage >= 5) { g.fillStyle = '#5ad06a'; g.fillRect(sx + 4, sy + sh - 16, 6, 6); txt(g, `在线 ${128 + Math.floor(t * 3) % 40} 人`, sx + 13, sy + sh - 19, '#2a7a4a', { shadow: null }); }
+    if (stage >= 5) { g.fillStyle = '#5ad06a'; g.fillRect(sx + 4, sy + sh - 16, 6, 6); txt(g, '模拟营业中', sx + 13, sy + sh - 19, '#2a7a4a', { shadow: null }); }
   }
   g.restore();
 }
 class AppScreen extends Screen {
-  constructor(upgraded) { super(); this.up = upgraded; this.btns = [new Btn({ label: upgraded ? '太棒了 ▶' : '关闭', w: 76, h: 20, style: 'primary', onPress: () => closeScreen(this) })]; appNew = false; }
+  constructor(upgraded) {
+    super(); this.up = upgraded; this.selected = Math.max(0, appStage() - 1);
+    this.btns = [new Btn({ label: upgraded ? '继续旅途 ▶' : '关闭', w: 92, h: 20, style: 'primary', onPress: () => closeScreen(this) })];
+    APP_STEPS.forEach((_, i) => this.btns.push(new Btn({ label: String(i + 1), w: 32, h: 23, step: i, disabled: i >= appStage(), onPress: () => { this.selected = i; } })));
+    appNew = false;
+  }
   onOpen() { if (this.up) { Audio.sfx('app'); for (let i = 0; i < 3; i++) { burst(VW / 2, VH / 2, 30, { colors: ['#ffd23f', '#ff8ab0', '#7ad0ff', '#7dffa6'], min: 60, max: 200, g: 120, life: 1.6, size: 2 }); } parts.slice(-90).forEach(p => p.layer = 'ui'); } }
   update(dt) { this.t += dt; if (Input.hit('back')) { closeScreen(this); return; } this.nav(); }
   draw(g) {
-    this.dimBg(g, .78);
-    const st = appStage(), P = PORTRAIT;
-    const pw = 120, ph = Math.min(220, VH - (P ? 250 : 60));
-    const px = P ? Math.round(VW / 2 - pw / 2) : 20, py = P ? 40 : Math.round((VH - ph) / 2);
-    txt(g, this.up ? 'App 升级了！' : '鸭鸭点餐 App 的进度', P ? VW / 2 : px + pw / 2, py - 18, UIC.gold, { align: 'center' });
+    this.dimBg(g, .88);
+    const st = appStage(), P = PORTRAIT, pw = 112, ph = P ? Math.min(156, Math.floor(VH * .32)) : Math.min(216, VH - 66);
+    const px = P ? Math.round((VW - pw) / 2) : 20, py = P ? 40 : 36;
+    txt(g, this.up ? '小店离灯会更近一步了' : '鸭鸭点餐 · 制作手记', VW / 2, 12, UIC.gold, {align: 'center'});
     const k = this.up ? easeOutBack(Math.min(1, this.t * 2)) : 1;
     g.save(); g.translate(px + pw / 2, py + ph / 2); g.scale(k, k); drawPhone(g, -pw / 2, -ph / 2, pw, ph, st, this.t); g.restore();
-    const lx = P ? 10 : px + pw + 18, ly = P ? py + ph + 12 : py, lw = P ? VW - 20 : VW - lx - 14;
-    let yy = ly;
-    APP_STEPS.forEach((s, i) => {
-      const got = i < st, cur = i === st - 1;
-      const L = wrap(s.d, lw - 26, got ? UIC.text : '#5a5878');
-      const hh = 16 + (got ? L.length * 13 : 0) + 6;
-      win(g, lx, yy, lw, hh, cur && this.up ? 'gold' : 'dark');
-      g.fillStyle = got ? UIC.mint : '#3a3458'; g.fillRect(lx + 6, yy + 5, 9, 9); if (got) { g.fillStyle = '#123a26'; g.fillRect(lx + 8, yy + 9, 2, 2); g.fillRect(lx + 10, yy + 10, 2, 2); g.fillRect(lx + 12, yy + 7, 1, 3); }
-      txt(g, `第${i + 1}步  ${got ? s.t : '？？？'}`, lx + 20, yy + 3, got ? (cur ? UIC.gold : UIC.text) : UIC.dim);
-      if (got) drawLines(g, L, lx + 20, yy + 17, { lh: 13 });
-      yy += hh + 3;
-    });
-    const b = this.btns[0]; b.x = P ? Math.round(VW / 2 - b.w / 2) : VW - b.w - 14; b.y = Math.min(VH - 26, P ? yy + 6 : VH - 28);
+    const lx = P ? 16 : 154, ly = P ? py + ph + 12 : 46, lw = VW - lx - 16;
+    const stepW = Math.min(40, Math.floor((lw - 20) / 5));
+    this.btns.slice(1).forEach((b, i) => { b.x = lx + i * (stepW + 4); b.y = ly; b.w = stepW; b.style = this.selected === i ? 'primary' : 'btn'; });
+    const s = APP_STEPS[this.selected], got = this.selected < st;
+    const desc = got ? s.d : '每完成一章委托，小店就会多一项能用的功能。';
+    const lines = wrap(desc, lw - 20), title = wrap(got ? s.t : '从一个想法开始', lw - 20, UIC.gold);
+    const hh = 22 + title.length * 14 + lines.length * 14;
+    win(g, lx, ly + 32, lw, hh, 'dark');
+    drawLines(g, title, lx + 10, ly + 41); drawLines(g, lines, lx + 10, ly + 45 + title.length * 14);
+    txt(g, `已完成 ${st} / 5 步`, lx, ly + 32 + hh + 8, UIC.dim);
+    const close = this.btns[0]; close.x = VW - close.w - 16; close.y = VH - 29;
     this.drawBtns(g);
   }
 }
@@ -315,25 +524,29 @@ class PauseScreen extends Screen {
     const hatName = G.hat ? HATS[G.hat].n : (G.hats.length ? '不戴' : '还没有');
     this.btns = [
       new Btn({ label: '继续游戏', w: 150, h: 20, style: 'primary', onPress: () => closeScreen(this) }),
-      new Btn({ label: '保存进度', w: 150, h: 20, onPress: () => { save(true); Audio.sfx('ok'); toast('已保存到本机浏览器', UIC.mint); } }),
+      new Btn({ label: '存档管理', w: 150, h: 20, onPress: () => openScreen(new SaveScreen()) }),
+      new Btn({ label: '旅途手记 / 地图', w: 150, h: 20, onPress: () => { closeScreen(this); openJournal(); } }),
       new Btn({ label: '术语图鉴', w: 150, h: 20, onPress: () => openNotebook() }),
       new Btn({ label: 'App 进度', w: 150, h: 20, onPress: () => openApp(false) }),
       new Btn({ label: `小 A 的帽子：${hatName}`, w: 150, h: 20, disabled: !G.hats.length, onPress: () => { const opts = [''].concat(G.hats); G.hat = opts[(opts.indexOf(G.hat) + 1) % opts.length]; save(); this.mk(); } }),
       new Btn({ label: `背景音乐：${Audio.music ? '开' : '关'}`, w: 150, h: 20, onPress: () => { Audio.setMusic(!Audio.music); this.mk(); } }),
       new Btn({ label: `音效：${Audio.effects ? '开' : '关'}`, w: 150, h: 20, onPress: () => { Audio.setSfx(!Audio.effects); this.mk(); } }),
-      new Btn({ label: '存档并回到标题', w: 150, h: 20, onPress: async () => { save(true); closeScreen(this, 'title'); } }),
+      new Btn({ label: '旅途指南', w: 150, h: 20, onPress: () => openScreen(new GuideScreen()) }),
+      new Btn({ label: '存档并回到标题', w: 150, h: 20, onPress: async () => { if (save(true)) closeScreen(this, 'title'); else toast('保存失败，请保持游戏打开', UIC.rose); } }),
     ];
     this.focus = f || 0;
   }
   update(dt) { this.t += dt; if (Input.hit('back')) { Audio.sfx('back'); closeScreen(this); return; } this.nav(); }
   draw(g) {
     this.dimBg(g, .55);
-    const w = 190, h = 28 + this.btns.length * 25 + 6, x = Math.round((VW - w) / 2), y = Math.round((VH - h) / 2) - 6;
-    win(g, x, y, w, h); txt(g, '暂停', VW / 2, y + 8, UIC.gold, { align: 'center' });
-    this.btns.forEach((b, i) => { b.x = x + 20; b.y = y + 28 + i * 25; }); this.drawBtns(g);
+    const cols = PORTRAIT ? 1 : 2, gap = 6, bw = PORTRAIT ? 180 : 150;
+    const rows = Math.ceil(this.btns.length / cols), w = cols * bw + (cols - 1) * gap + 36, h = 42 + rows * 25;
+    const x = Math.round((VW - w) / 2), y = Math.max(8, Math.round((VH - h - 42) / 2));
+    win(g, x, y, w, h); txt(g, '在这里歇一会儿', x + 18, y + 12, UIC.gold);
+    this.btns.forEach((b, i) => { b.w = bw; b.x = x + 18 + (i % cols) * (bw + gap); b.y = y + 34 + Math.floor(i / cols) * 25; }); this.drawBtns(g);
     const mm = Math.floor(G.t / 60), ss = String(Math.floor(G.t % 60)).padStart(2, '0');
-    txt(g, `冒险时间 ${mm}:${ss} · 术语 ${mainCount()}/${TERMS.length}`, VW / 2, y + h + 6, UIC.dim, { align: 'center' });
-    txt(g, '每过一关自动存档到本机浏览器', VW / 2, y + h + 22, UIC.dim, { align: 'center' });
+    txt(g, `旅途 ${mm}:${ss} · 术语 ${mainCount()}/${TERMS.length}`, VW / 2, y + h + 7, UIC.dim, { align: 'center' });
+    txt(g, '进度保存在这台设备的浏览器中', VW / 2, y + h + 23, UIC.dim, { align: 'center' });
   }
 }
 
@@ -343,6 +556,14 @@ function drawRoom(g, dt) {
   room.t += dt;
   const night = room.mode === 'night', t = room.t;
   const cx = Math.round(VW / 2), floorY = Math.round(VH * .72);
+  if (ART['comic-arrival']) {
+    coverArt(g, 'comic-arrival', 0, 0, VW, VH, t, .5);
+    g.fillStyle = night ? 'rgba(5,14,28,.16)' : 'rgba(255,202,142,.12)'; g.fillRect(0, 0, VW, VH);
+    if (!reducedMotion()) for (let i = 0; i < 18; i++) { g.globalAlpha = .2 + .3 * Math.max(0, Math.sin(t + i)); g.fillStyle = '#ffe4ac'; g.fillRect(Math.round(hash2(i, 3) * VW), Math.round(hash2(i, 4) * VH + Math.sin(t * .3 + i) * 4), 1, 1); }
+    g.globalAlpha = 1;
+    if (room.warp > 0) { g.fillStyle = `rgba(180,240,255,${room.warp * .8})`; g.fillRect(0, 0, VW, VH); }
+    return;
+  }
   // 墙
   g.fillStyle = night ? '#1c1a36' : '#3a3050'; g.fillRect(0, 0, VW, VH);
   for (let x = 0; x < VW; x += 24) { g.fillStyle = night ? '#201e3e' : '#40365a'; g.fillRect(x, 0, 12, floorY); }
@@ -380,7 +601,7 @@ function drawRoom(g, dt) {
   g.fillStyle = '#e8e8f0'; g.fillRect(cx + 58, dy - 12, 10, 12); g.fillRect(cx + 68, dy - 9, 3, 6); g.fillStyle = '#6a4a32'; g.fillRect(cx + 59, dy - 11, 8, 2);
   if (!night || room.duckOnDesk) g.drawImage(duckFrame(Math.floor(t * 2) % 2, 0), cx - 80, dy - 17);
   // 人（背影）
-  if (!room.noPlayer) { const im = charFrame('player', 1, 0); g.drawImage(im, cx - 18, dy - 22, 36, 60); }
+  if (!room.noPlayer) { const im = charFrame('player', 1, 0); g.drawImage(im, cx - im.width, dy - im.height * 2 + 38, im.width * 2, im.height * 2); }
   // 椅子
   g.fillStyle = '#3a3a5a'; g.fillRect(cx - 20, dy + 26, 40, 6); g.fillRect(cx - 3, dy + 32, 6, 16);
   // 暗角

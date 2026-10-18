@@ -17,19 +17,195 @@ const BUGIMG = () => cached('bug', makeBug);
 
 /* ---------- 存档状态 ---------- */
 const SAVE_KEY = 'code-village-v3';
-const freshState = () => ({ done: 0, terms: [], side: [], ach: [], hats: [], hat: '', signs: [], wrong: 0, t: 0, px: 0, py: 0 });
+const freshState = () => ({ done: 0, terms: [], side: [], ach: [], hats: [], hat: '', signs: [], comics: [], keepsakes: [], roomsVisited: [], residentsSeen: [], residentVisits: {}, wrong: 0, t: 0, px: 0, py: 0 });
 let G = freshState();
 /* 存档只放在本机浏览器里 */
 let saveFx = 0;
-const validSave = s => s && typeof s.done === 'number' && Array.isArray(s.terms);
+const validSave = s => !!(s && typeof s === 'object' && !Array.isArray(s) && Number.isInteger(s.done) && s.done >= 0 && s.done <= NZ && Array.isArray(s.terms));
+function normalizeSave(s) {
+  if (!validSave(s)) return null;
+  const next = { ...freshState(), ...s, version: 4 };
+  const ids = (value, allowed) => [...new Set((Array.isArray(value) ? value : []).filter(v => typeof v === 'string' && v.length <= 100 && (!allowed || allowed.has(v))))].slice(0, 512);
+  next.terms = ids(s.terms, typeof TERMS !== 'undefined' ? new Set([...TERMS, ...HIDDEN].map(t => t.id)) : null);
+  next.ach = ids(s.ach, typeof ACH !== 'undefined' ? new Set(ACH.map(a => a.id)) : null);
+  next.hats = ids(s.hats, typeof HATS !== 'undefined' ? new Set(Object.keys(HATS)) : null);
+  next.hat = typeof s.hat === 'string' && next.hats.includes(s.hat) ? s.hat : '';
+  next.side = ids(s.side, new Set(SIDES.map(row => row[0])));
+  next.signs = [...new Set((Array.isArray(s.signs) ? s.signs : []).filter(z => Number.isInteger(z) && z >= 0 && z < NZ))];
+  next.comics = ids(s.comics, typeof COMICS !== 'undefined' ? new Set(Object.keys(COMICS)) : null);
+  next.roomsVisited = ids(s.roomsVisited, typeof INTERIORS !== 'undefined' ? new Set(Object.keys(INTERIORS)) : null);
+  next.keepsakes = ids(s.keepsakes, typeof INTERIORS !== 'undefined' ? new Set(Object.entries(INTERIORS).flatMap(([key, room]) => room.spots.map(spot => `${key}:${spot.id}`))) : null);
+  next.residentsSeen = ids(s.residentsSeen, typeof RESIDENTS !== 'undefined' ? new Set(Object.keys(RESIDENTS)) : null);
+  next.residentVisits = {};
+  if (s.residentVisits && typeof s.residentVisits === 'object' && !Array.isArray(s.residentVisits)) {
+    for (const [k, v] of Object.entries(s.residentVisits).slice(0, 256)) if (/^[a-zA-Z0-9_-]+:(before|after)$/.test(k) && Number.isSafeInteger(v) && v >= 0) next.residentVisits[k] = v;
+  }
+  next.wrong = Number.isSafeInteger(s.wrong) && s.wrong >= 0 ? s.wrong : 0;
+  next.t = Number.isFinite(s.t) && s.t >= 0 ? s.t : 0;
+  next.savedAt = Number.isFinite(s.savedAt) && s.savedAt >= 0 ? s.savedAt : 0;
+  const maxX = (Math.min(next.done, NZ - 1) + 1) * ZW * TILE - 24;
+  const validPosition = Number.isFinite(s.px) && Number.isFinite(s.py) && s.px >= 12 && s.px <= maxX && s.py >= 4 * TILE + 8 && s.py <= 26 * TILE - 8;
+  if (!validPosition || (solid && blocked(s.px, s.py, next.done))) {
+    const baseX = Math.min(next.done, NZ - 1) * ZW * TILE + 6 * TILE;
+    next.px = baseX; next.py = 15 * TILE - 2;
+    if (solid) for (let dx = 0; dx <= 160; dx += 8) {
+      if (baseX + dx <= maxX && !blocked(baseX + dx, next.py, next.done)) { next.px = baseX + dx; break; }
+    }
+  }
+  return next;
+}
 function save(important) {
   G.px = player.x; G.py = player.y; G.savedAt = Date.now();
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify(G)); } catch (e) {}
+  G.version = 4;
+  try { const data = JSON.stringify(G); localStorage.setItem(SAVE_KEY, data); if (localStorage.getItem(SAVE_KEY) !== data) return false; } catch (e) { return false; }
   if (important) saveFx = 1.8;
+  return true;
 }
-function loadSave() { try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); if (validSave(s)) return s; } catch (e) {} return null; }
+function loadSave() { try { return normalizeSave(JSON.parse(localStorage.getItem(SAVE_KEY) || 'null')); } catch (e) { return null; } }
 function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} }
-const hasProgress = s => !!(s && (s.done > 0 || (s.terms && s.terms.length)));
+const hasProgress = s => !!(s && (s.done > 0 || s.terms?.length || s.comics?.length || s.roomsVisited?.length));
+
+/* 文件存档不依赖服务器账号。预览只解析；确认导入才备份并写入。 */
+const SaveTransfer = (() => {
+  const MAX_BYTES = 128 * 1024, BACKUP_KEY = SAVE_KEY + '-before-import';
+  const fields = new Set(['done', 'terms', 'side', 'ach', 'hats', 'hat', 'signs', 'comics', 'keepsakes', 'roomsVisited', 'residentsSeen', 'residentVisits', 'wrong', 't', 'px', 'py', 'savedAt', 'version']);
+  const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+  const record = o => o !== null && typeof o === 'object' && !Array.isArray(o);
+  const fail = (code, message) => { const e = new Error(message); e.code = code; throw e; };
+  const bytes = text => new TextEncoder().encode(text).byteLength;
+  function read(key) {
+    try { return localStorage.getItem(key); }
+    catch (e) { return fail('STORAGE_READ', '浏览器不允许读取本地存档，请检查隐私或存储设置。'); }
+  }
+  function writeRaw(key, raw) {
+    if (raw === null) localStorage.removeItem(key); else localStorage.setItem(key, raw);
+    if (localStorage.getItem(key) !== raw) throw new Error('Storage verification failed');
+  }
+  function rollback(key, raw) {
+    try { if (localStorage.getItem(key) !== raw) writeRaw(key, raw); return true; }
+    catch (e) { return false; }
+  }
+  function validateState(s) {
+    if (!record(s) || Object.keys(s).some(k => !fields.has(k))) fail('STATE_FIELDS', '存档包含无法识别的进度字段。');
+    if (!Number.isInteger(s.done) || s.done < 0 || s.done > NZ || !Array.isArray(s.terms)) fail('STATE_PROGRESS', '存档的章节或术语记录不完整。');
+    if (own(s, 'version') && (!Number.isInteger(s.version) || s.version < 1 || s.version > 4)) fail('STATE_VERSION', '此存档来自不支持的游戏版本，请使用对应版本打开。');
+    const allowed = {
+      terms: new Set([...TERMS, ...HIDDEN].map(t => t.id)), side: new Set(SIDES.map(r => r[0])),
+      ach: new Set(ACH.map(a => a.id)), hats: new Set(Object.keys(HATS)), comics: new Set(Object.keys(COMICS)),
+      roomsVisited: new Set(Object.keys(INTERIORS)), residentsSeen: new Set(Object.keys(RESIDENTS)),
+      keepsakes: new Set(Object.entries(INTERIORS).flatMap(([key, room]) => room.spots.map(spot => `${key}:${spot.id}`))),
+    };
+    for (const [key, ids] of Object.entries(allowed)) {
+      if (!own(s, key)) continue; // 旧存档缺少后续加入的收藏字段时，按空记录迁移。
+      if (!Array.isArray(s[key]) || s[key].length > 512 || s[key].some(id => typeof id !== 'string' || !ids.has(id))) fail('STATE_IDS', '存档包含无法识别的收藏或任务记录。');
+    }
+    if (own(s, 'hat') && (typeof s.hat !== 'string' || (s.hat !== '' && !(s.hats || []).includes(s.hat)))) fail('STATE_HAT', '存档中的帽子记录不一致。');
+    if (own(s, 'signs') && (!Array.isArray(s.signs) || s.signs.length > NZ * 2 || s.signs.some(z => !Number.isInteger(z) || z < 0 || z >= NZ))) fail('STATE_SIGNS', '存档中的路牌记录无效。');
+    if (own(s, 'residentVisits')) {
+      if (!record(s.residentVisits) || Object.keys(s.residentVisits).length > 256) fail('STATE_VISITS', '存档中的居民对话记录无效。');
+      for (const [key, count] of Object.entries(s.residentVisits)) {
+        const match = /^([a-zA-Z0-9_-]+):(before|after)$/.exec(key);
+        if (!match || !own(RESIDENTS, match[1]) || !Number.isSafeInteger(count) || count < 0) fail('STATE_VISITS', '存档中的居民对话记录无效。');
+      }
+    }
+    for (const key of ['wrong', 't', 'savedAt']) {
+      if (!own(s, key)) continue;
+      const v = s[key], valid = key === 'wrong' ? Number.isSafeInteger(v) : Number.isFinite(v);
+      if (!valid || v < 0 || v > (key === 'savedAt' ? 8640000000000000 : Number.MAX_SAFE_INTEGER)) fail('STATE_NUMBER', '存档中的时间或计数记录无效。');
+    }
+    for (const [key, max] of [['px', NZ * ZW * TILE], ['py', 30 * TILE]]) {
+      if (own(s, key) && (!Number.isFinite(s[key]) || s[key] < 0 || s[key] > max)) fail('STATE_POSITION', '存档中的角色位置无效。');
+    }
+    // 复用旧档迁移与安全落点；只返回新对象，不修改传入对象或运行中的 G。
+    return normalizeSave(JSON.parse(JSON.stringify(s)));
+  }
+  function summary(s) {
+    const state = validateState(s), zone = Math.min(state.done, NZ - 1);
+    return { done: state.done, chapter: state.done === NZ ? '已通关' : REGIONS[regionOf(zone)].name,
+      terms: state.terms.length, seconds: state.t, savedAt: state.savedAt };
+  }
+  function envelope(state, exportedAt = new Date().toISOString()) {
+    return { gameId: 'code-village', formatVersion: 1, gameVersion: GAME_VERSION, exportedAt, state };
+  }
+  function parse(text) {
+    if (typeof text !== 'string' || !text.trim()) fail('EMPTY_FILE', '文件是空的，请选择导出的 JSON 存档。');
+    if (bytes(text) > MAX_BYTES) fail('FILE_TOO_LARGE', '文件超过 128 KB，请选择游戏导出的 JSON 存档。');
+    let value;
+    try { value = JSON.parse(text.replace(/^\uFEFF/, '')); }
+    catch (e) { return fail('INVALID_JSON', '无法读取这个文件，请选择完整的 JSON 存档。'); }
+    if (!record(value)) fail('INVALID_FILE', '这不是有效的游戏存档。');
+    const wrapped = own(value, 'gameId') || own(value, 'formatVersion') || own(value, 'state');
+    if (wrapped) {
+      if (Object.keys(value).some(key => !['gameId', 'formatVersion', 'gameVersion', 'exportedAt', 'state'].includes(key))) fail('FILE_METADATA', '存档包含无法识别的文件信息。');
+      if (value.gameId !== 'code-village') fail('WRONG_GAME', '这个存档不属于《代码物语》。');
+      if (value.formatVersion !== 1) fail('FORMAT_VERSION', '不支持此存档格式，请使用对应版本的游戏。');
+      if (typeof value.gameVersion !== 'string' || !value.gameVersion.trim() || value.gameVersion.length > 80 ||
+          typeof value.exportedAt !== 'string' || !/^\d{4}-\d\d-\d\dT/.test(value.exportedAt) || !Number.isFinite(Date.parse(value.exportedAt))) fail('FILE_METADATA', '存档的版本或导出时间无效。');
+    }
+    const state = validateState(wrapped ? value.state : value);
+    return { envelope: wrapped ? { ...value, state } : envelope(state), state, summary: summary(state), legacy: !wrapped };
+  }
+  function currentState(exporting = false) {
+    if (scene === 'world') return validateState({ ...G, px: player.x, py: player.y, savedAt: exporting ? Date.now() : G.savedAt || 0, version: 4 });
+    const raw = read(SAVE_KEY);
+    if (raw === null) return null;
+    return parse(raw).state;
+  }
+  function currentSummary() { const state = currentState(); return state ? summary(state) : null; }
+  function exportCurrent() {
+    const state = currentState(true);
+    if (!state) fail('NO_SAVE', '还没有存档，开始冒险后再来导出。');
+    const data = envelope(state), text = JSON.stringify(data, null, 2);
+    if (bytes(text) > MAX_BYTES) fail('FILE_TOO_LARGE', '当前存档超出支持大小，未生成文件。');
+    return { envelope: data, text, filename: `代码物语-存档-${data.exportedAt.replace(/[:.]/g, '-')}.json`, summary: summary(state) };
+  }
+  function importState(value) {
+    const state = validateState(value), raw = JSON.stringify(state);
+    if (bytes(raw) > MAX_BYTES) fail('FILE_TOO_LARGE', '存档超出支持大小，未导入。');
+    const old = read(SAVE_KEY), previousBackup = read(BACKUP_KEY);
+    const backupRaw = scene === 'world' ? JSON.stringify(currentState()) : old;
+    const backup = JSON.stringify({ gameId: 'code-village', formatVersion: 1, createdAt: new Date().toISOString(), raw: backupRaw });
+    try { writeRaw(BACKUP_KEY, backup); }
+    catch (e) {
+      const backupRestored = rollback(BACKUP_KEY, previousBackup);
+      return fail('BACKUP_WRITE', backupRestored ? '未能备份原进度，导入已取消。原存档保持不变。' : '未能备份原进度，导入已取消。原存档未改动，但恢复备份无法确认，请先导出当前存档。');
+    }
+    try { writeRaw(SAVE_KEY, raw); }
+    catch (e) {
+      const restored = rollback(SAVE_KEY, old);
+      const backupRestored = restored && rollback(BACKUP_KEY, previousBackup);
+      return fail(restored ? 'IMPORT_WRITE' : 'IMPORT_ROLLBACK', restored
+        ? (backupRestored ? '导入未能保存，原存档已保留。请检查浏览器存储空间。' : '导入未能保存，原存档已保留，但恢复备份未能还原。请先导出当前存档。')
+        : '导入未能保存，原进度已留在恢复备份中。请勿关闭页面，先尝试恢复备份。');
+    }
+    return { state, summary: summary(state) };
+  }
+  function recovery() {
+    const raw = read(BACKUP_KEY);
+    if (raw === null) return null;
+    let value;
+    try { value = JSON.parse(raw); } catch (e) { return fail('BACKUP_INVALID', '导入前备份已损坏，当前存档未改动。'); }
+    if (!record(value) || value.gameId !== 'code-village' || value.formatVersion !== 1 ||
+        typeof value.createdAt !== 'string' || !Number.isFinite(Date.parse(value.createdAt)) ||
+        (value.raw !== null && typeof value.raw !== 'string')) fail('BACKUP_INVALID', '导入前备份格式无效，当前存档未改动。');
+    if (value.raw === null) return null;
+    const parsed = parse(value.raw);
+    return { state: parsed.state, summary: parsed.summary, createdAt: value.createdAt };
+  }
+  function restore() {
+    const backup = recovery();
+    if (!backup) fail('NO_BACKUP', '还没有可恢复的导入前存档。');
+    const old = read(SAVE_KEY), raw = JSON.stringify(backup.state);
+    try { writeRaw(SAVE_KEY, raw); }
+    catch (e) {
+      const restored = rollback(SAVE_KEY, old);
+      return fail(restored ? 'RESTORE_WRITE' : 'RESTORE_ROLLBACK', restored ? '恢复未能保存，当前进度未改动。' : '恢复未能保存。导入前备份仍在，请检查浏览器存储设置后重试。');
+    }
+    // 恢复不能覆盖备份；重复点击恢复仍指向同一个导入前进度。
+    return { state: backup.state, summary: backup.summary };
+  }
+  return { MAX_BYTES, BACKUP_KEY, parse, summary, currentSummary, exportCurrent, import: importState, recovery, restore };
+})();
 window.addEventListener('pagehide', () => { if (scene === 'world') save(true); });
 document.addEventListener('visibilitychange', () => { if (document.hidden && scene === 'world') save(true); });
 
@@ -38,6 +214,8 @@ const player = { x: 0, y: 0, dir: 3, frame: 0, walkT: 0, moving: false, stepT: 0
 const trail = [];
 const xa = { x: 0, y: 0, f: 1, mood: 'ok' };
 let cam = { x: 0, y: 0 };
+// 旋转或改变视口时立即安置镜头，避免恢复首帧 dt=0 仍沿用旧视高而藏住角色。
+resizeHooks.push(() => { if (scene === 'world') cam.y = worldCameraY(player.y); });
 let curZone = -1, bannerT = 0, bannerText = '', curRegion = -1, chapterT = 0, chapterR = 0;
 let doorOpen = false;
 const chatter = { t: 14, who: null, text: '', life: 0 };
@@ -58,18 +236,18 @@ function setupNPCs() {
   });
   SIDES.forEach(([sid, who, z]) => { const s = SIDE_SPOTS[z]; npcs.push({ id: 'side-' + sid, sid, who, kind: 'side', x: s.x, y: s.y, dir: 0, range: 26, blinkT: rand(2, 5) }); });
 }
-const npcVisible = n => !(n.kind === 'xaNpc' && G.done >= 1) && !(n.boss && n.boss !== 'final' && G.done > n.id);
-const bossAlive = n => n.boss && G.done <= n.id;
+const npcVisible = (n, done = G.done) => !(n.kind === 'xaNpc' && done >= 1) && !(n.boss && n.boss !== 'final' && done > n.id);
+const bossAlive = (n, done = G.done) => n.boss && done <= n.id;
 const sideDone = sid => G.side.includes(sid);
-function npcRect(n) { if (n.boss && !bossAlive(n)) return [-6, -4, 12, 4]; return n.solid || [-6, -5, 12, 5]; }
+function npcRect(n, done = G.done) { if (n.boss && !bossAlive(n, done)) return [-6, -4, 12, 4]; return n.solid || [-6, -5, 12, 5]; }
 
 /* ---------- 碰撞 ---------- */
 const wallActive = w => G.done <= w.zone;
 let lastBump = 0;
-function blocked(x, y) {
+function blocked(x, y, done = G.done) {
   for (const [dx, dy] of [[-5, -4], [5, -4], [-5, 0], [5, 0]]) if (solidAtPx(x + dx, y + dy)) return 'x';
-  for (const w of walls) if (wallActive(w) && x + 5 > w.x && x - 5 < w.x + 16 && y > 4 * TILE && y < 26 * TILE) return 'wall';
-  for (const n of npcs) { if (!npcVisible(n)) continue; const [rx, ry, rw, rh] = npcRect(n); if (x + 5 > n.x + rx && x - 5 < n.x + rx + rw && y > n.y + ry && y - 4 < n.y + ry + rh) return 'x'; }
+  for (const w of walls) if (done <= w.zone && x + 5 > w.x && x - 5 < w.x + 16 && y > 4 * TILE && y < 26 * TILE) return 'wall';
+  for (const n of npcs) { if (!npcVisible(n, done)) continue; const [rx, ry, rw, rh] = npcRect(n, done); if (x + 5 > n.x + rx && x - 5 < n.x + rx + rw && y > n.y + ry && y - 4 < n.y + ry + rh) return 'x'; }
   return null;
 }
 function tryMove(dx, dy) {
@@ -79,11 +257,28 @@ function tryMove(dx, dy) {
 }
 
 /* ---------- 互动 ---------- */
-function interactTarget() {
-  let best = null, bd = 1e9;
-  for (const n of npcs) { if (!npcVisible(n)) continue; const d = Math.hypot(n.x - player.x, (n.y - 4) - (player.y - 4)); if (d < n.range && d < bd) { bd = d; best = { type: 'npc', n }; } }
-  for (const o of objects) { if (!o.interact) continue; const d = Math.hypot(o.x - player.x, o.y - player.y); if (d < 24 && d < bd) { bd = d; best = { type: 'sign', o }; } }
-  return best;
+function interactionHit(t, p) {
+  if (!p) return true;
+  if (t.type === 'ambient') return ambientHit(t.a, p);
+  const o = t.type === 'npc' ? t.n : t.o, x = o.x - cam.x, y = o.y - cam.y;
+  const height = t.type === 'npc' ? (o.boss ? 72 : o.who === 'door' ? 88 : 48) : o.interact.type === 'interior' ? 38 : Math.max(24, o.img?.height || 24);
+  return Math.abs(p.x - x) <= (o.boss || o.who === 'door' ? 38 : 22) && p.y >= y - height && p.y <= y + 8;
+}
+function interactTarget(point = null) {
+  const candidates = [];
+  for (const n of npcs) {
+    if (!npcVisible(n) || (typeof n.id === 'number' && n.id > G.done)) continue;
+    const d = Math.hypot(n.x - player.x, n.y - player.y), t = { type: 'npc', n };
+    if (d < n.range && interactionHit(t, point)) candidates.push({ t, rank: n.id === G.done || n.who === 'door' ? 0 : 1, d });
+  }
+  for (const o of objects) {
+    if (!o.interact || (o.interact.type === 'interior' && o.interact.z > G.done)) continue;
+    const d = Math.hypot(o.x - player.x, o.y - player.y), t = { type: 'sign', o };
+    if (d < 24 && interactionHit(t, point)) candidates.push({ t, rank: o.interact.type === 'interior' ? 0 : 1, d });
+  }
+  if (typeof ambientTarget === 'function') { const t = ambientTarget(point); if (t) candidates.push({ t, rank: 2, d: t.distance }); }
+  candidates.sort((a, b) => a.rank - b.rank || a.d - b.d);
+  return candidates[0]?.t || null;
 }
 
 /* ---------- 世界更新 ---------- */
@@ -95,6 +290,7 @@ function follow(o, trailBack, dt) {
 }
 function updateWorld(dt, free) {
   worldT += dt;
+  if (typeof updateAmbient === 'function') updateAmbient(dt);
   player.moving = false;
   if (free) {
     let dx = (Input.held.right ? 1 : 0) - (Input.held.left ? 1 : 0), dy = (Input.held.down ? 1 : 0) - (Input.held.up ? 1 : 0);
@@ -117,12 +313,17 @@ function updateWorld(dt, free) {
     if (free && scene === 'world') { chatter.t -= dt; if (chatter.t < 0) { chatter.t = rand(16, 26); const line = pickChatter(); if (line) { chatter.who = line[0]; chatter.text = line[1]; chatter.life = 4.5; } } }
     if (chatter.life > 0) chatter.life -= dt;
   }
-  for (const n of npcs) { n.blinkT -= dt; if (n.blinkT < -.12) n.blinkT = rand(2, 5); }
+  for (const n of npcs) {
+    n.blinkT -= dt; if (n.blinkT < -.12) n.blinkT = rand(2, 5);
+    if (!CHAR[n.who]) continue;
+    const dx = player.x - n.x, dy = player.y - n.y;
+    if (scene === 'world' && Math.hypot(dx, dy) < 65) n.dir = Math.abs(dx) > Math.abs(dy) * 1.3 ? (dx > 0 ? 3 : 2) : (dy > 0 ? 0 : 1);
+    else { const glance = Math.floor(worldT / 5 + n.x * .017) % 8; n.dir = glance === 2 ? 2 : glance === 6 ? 3 : 0; }
+  }
   // 镜头
   if (scene !== 'title') {
     const look = player.dir === 3 ? 18 : player.dir === 2 ? -18 : 0;
-    let tx = player.x + look - VW / 2, ty = player.y - 12 - VH / 2;
-    tx = clamp(tx, 0, MAPW - VW); ty = VH >= MAPH ? (MAPH - VH) / 2 : clamp(ty, 0, MAPH - VH);
+    const tx = clamp(player.x + look - VW / 2, 0, MAPW - VW), ty = worldCameraY(player.y);
     const k = 1 - Math.exp(-dt * 6); cam.x += (tx - cam.x) * k; cam.y += (ty - cam.y) * k;
   }
   // 区域 & 章节
@@ -189,6 +390,10 @@ function speech(g, x, y, text) {
   g.fillStyle = OUTLINE; g.fillRect(Math.round(x) - 1, by + 17, 3, 2); g.fillStyle = '#fffaf0'; g.fillRect(Math.round(x), by + 16, 1, 2);
   txt(g, text, bx + 5, by + 3, '#2a2030', { shadow: null });
 }
+function drawWorldDecor(g, d, ix, iy) {
+  const hop = typeof ambientOffset === 'function' ? ambientOffset(d) : 0;
+  drawDecor(g, d, ix, iy - hop, worldT);
+}
 function drawWorld(g, dt) {
   const sk = fx.shake > 0 ? fx.shake : 0;
   const ix = Math.round(cam.x + (sk ? rand(-sk, sk) : 0)), iy = Math.round(cam.y + (sk ? rand(-sk, sk) : 0));
@@ -201,8 +406,8 @@ function drawWorld(g, dt) {
     for (let y = MAPH - iy - 16; y < VH; y += 52) for (let x = ox; x < VW; x += 192) g.drawImage(FOREST, x, y);
   }
   for (const w of waterSpots) { const sx = w.x - ix, sy = w.y - iy; if (sx < 0 || sy < 0 || sx > VW || sy > VH) continue; const ph = Math.sin(worldT * 2 + w.x * .3 + w.y * .2); if (w.edge) { if (ph > .6) { g.fillStyle = '#ffffff'; g.fillRect(sx, sy, 1, 1); } } else if (ph > .3) { g.fillStyle = '#d8f4ff'; g.fillRect(sx, sy, 2, 1); } }
-  const ON_TOP = new Set(['lanterns', 'flag', 'flagpole', 'fogpuff', 'foxfire']);
-  for (const d of decor) { const dx = (d.x || d.x1) - ix; if (dx < -400 || dx > VW + 400) continue; if (!ON_TOP.has(d.kind)) drawDecor(g, d, ix, iy, worldT); }
+  const ON_TOP = new Set(['lanterns', 'festivalRibbon', 'flag', 'flagpole', 'fogpuff', 'foxfire']);
+  for (const d of decor) { const dx = (d.x || d.x1) - ix; if (dx < -400 || dx > VW + 400) continue; if (!ON_TOP.has(d.kind)) drawWorldDecor(g, d, ix, iy); }
   const list = [];
   for (const o of objects) { const sx = o.x - ix; if (sx < -80 || sx > VW + 80 || o.y - iy < -10 || o.y + o.oy - iy > VH + 10) continue; list.push({ y: o.y, o }); }
   for (const d of decor) if ((d.kind === 'flag' || d.kind === 'flagpole') && Math.abs(d.x - ix - VW / 2) < VW) list.push({ y: d.y, d });
@@ -212,15 +417,15 @@ function drawWorld(g, dt) {
   list.sort((a, b) => a.y - b.y);
   for (const e of list) {
     if (e.o) {
-      const o = e.o, sx = Math.round(o.x - ix), sy = Math.round(o.y - iy);
+      const o = e.o, sx = Math.round(o.x - ix), sy = Math.round(o.y - iy + (typeof ambientOffset === 'function' ? ambientOffset(o) : 0));
       if (o.shadow) shadowAt(g, sx, sy - 1, o.shadow[0], o.shadow[1]);
       if (o.draw) { o.draw(g, sx, sy); continue; }
       if (o.sway) { const s = Math.round(Math.sin(worldT * 1.3 + o.x * .07) * .8); const cut = o.img.height - 16; g.drawImage(o.img, 0, 0, o.img.width, cut, sx + o.ox + s, sy + o.oy, o.img.width, cut); g.drawImage(o.img, 0, cut, o.img.width, 16, sx + o.ox, sy + o.oy + cut, o.img.width, 16); }
       else g.drawImage(o.img, sx + o.ox, sy + o.oy);
       if (o.glow) { g.globalCompositeOperation = 'lighter'; g.globalAlpha = .25 + Math.sin(worldT * 3 + o.x) * .1; g.drawImage(glowSprite('#b05aff'), sx - 14, sy - 30, 28, 28); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; }
-    } else if (e.d) drawDecor(g, e.d, ix, iy, worldT);
+    } else if (e.d) drawWorldDecor(g, e.d, ix, iy);
     else if (e.n) drawNpc(g, e.n, ix, iy);
-    else if (e.p) { const im = charFrame('player', player.dir, player.frame); shadowAt(g, Math.round(player.x - ix), Math.round(player.y - iy) - 1, 6, 2); g.drawImage(im, Math.round(player.x - ix) - 9, Math.round(player.y - iy) - 29); }
+    else if (e.p) { const im = charFrame('player', player.dir, player.frame); shadowAt(g, Math.round(player.x - ix), Math.round(player.y - iy) - 1, 8, 2.5); g.drawImage(im, Math.round(player.x - ix) - Math.round(im.width / 2), Math.round(player.y - iy) - im.height + 1); }
     else if (e.xa) {
       const hov = Math.round(Math.sin(worldT * 3) * 1.5), im = xaFrame(Math.floor(worldT * 4) % 2, isTalking('xa'), xa.mood);
       shadowAt(g, Math.round(xa.x - ix), Math.round(xa.y - iy) - 1, 5, 2);
@@ -229,7 +434,7 @@ function drawWorld(g, dt) {
       if (G.hat) g.drawImage(xa.f < 0 ? hatImgL(G.hat) : hatImg(G.hat), xx + 2, xy - 4 + fb);
     }
   }
-  for (const d of decor) if ((d.kind === 'lanterns' && Math.abs(d.x1 - ix) < VW + 200) || ((d.kind === 'fogpuff' || d.kind === 'foxfire') && Math.abs(d.x - ix - VW / 2) < VW)) drawDecor(g, d, ix, iy, worldT);
+  for (const d of decor) if (((d.kind === 'lanterns' || d.kind === 'festivalRibbon') && Math.abs(d.x1 - ix) < VW + 200) || ((d.kind === 'fogpuff' || d.kind === 'foxfire') && Math.abs(d.x - ix - VW / 2) < VW)) drawWorldDecor(g, d, ix, iy);
   drawParts(g, ix, iy, 'world');
   const amb = ambientAt(ix + VW / 2), dark = 1 - lum(amb);
   if (dark < .3) { g.globalAlpha = 1 - dark * 3; for (const c of clouds) { const sx = c.x - ix, sy = c.y - iy; if (sx < -260 || sx > VW + 20) continue; g.drawImage(CLOUD, Math.round(sx), Math.round(sy), 160 * c.s, 70 * c.s); } g.globalAlpha = 1; }
@@ -238,6 +443,7 @@ function drawWorld(g, dt) {
   lightCx.globalCompositeOperation = 'lighter';
   const nightK = clamp((dark - .05) * 2.4, 0, 1), glows = [];
   for (const L of lights) {
+    if (L.unlockZone !== undefined && G.done <= L.unlockZone) continue;
     const sx = L.x - ix, sy = L.y - iy; if (sx < -L.r || sx > VW + L.r || sy < -L.r || sy > VH + L.r) continue;
     let k = L.always ? .45 + dark * .9 : nightK; if (k <= 0) continue;
     if (L.flicker) k *= 1 - L.flicker + Math.random() * L.flicker * 2;
@@ -260,6 +466,7 @@ function drawWorld(g, dt) {
   if (chatter.life > 0 && scene === 'world' && !screens.length) { g.globalAlpha = clamp(chatter.life, 0, 1); speech(g, xa.x - ix, xa.y - iy - 30, chatter.text); g.globalAlpha = 1; }
   drawParts(g, ix, iy, 'top');
   g.drawImage(vigCv, 0, 0);
+  if (typeof drawAmbientFeedback === 'function') drawAmbientFeedback(g, ix, iy);
 }
 function drawNpc(g, n, ix, iy) {
   const sx = Math.round(n.x - ix), sy = Math.round(n.y - iy);
@@ -268,15 +475,16 @@ function drawNpc(g, n, ix, iy) {
     shadowAt(g, sx, sy - 2, 30, 6);
     const im = bossFrame(Math.floor(worldT * 4) % 4, false, n.boss), by = Math.round(Math.sin(worldT * 2) * 2);
     for (let i = 0; i < 29; i++) { const off = Math.round(Math.sin(worldT * 4 + i * .4) * (i % 7 === 0 ? 2 : .6)); g.drawImage(im, 0, i * 2, 66, 2, sx - 33 + off, sy - 60 + by + i * 2, 66, 2); }
-    if (G.done === n.id && scene === 'world' && promptTarget !== n) bubble(g, sx, sy - 62, '!');
+    if (G.done === n.id && scene === 'world' && !screens.length && !scriptRunning && promptTarget !== n) bubble(g, sx, sy - 62, '!');
     return;
   }
-  if (n.who === 'door') { drawDoor(g, sx, sy); if (G.done === n.id && scene === 'world' && promptTarget !== n) bubble(g, sx, sy - 84, '!'); return; }
+  if (n.who === 'door') { drawDoor(g, sx, sy); if (G.done === n.id && scene === 'world' && !screens.length && !scriptRunning && promptTarget !== n) bubble(g, sx, sy - 84, '!'); return; }
   const im = npcSprite(n);
-  shadowAt(g, sx, sy - 1, 6, 2);
+  shadowAt(g, sx, sy - 1, CHAR[n.who] ? 8 : 6, 2.5);
   const h = im.height;
-  g.drawImage(im, sx - Math.round(im.width / 2), sy - h + 1);
-  if (scene === 'world' && promptTarget !== n) {
+  const breath = CHAR[n.who] && Math.sin(worldT * 1.7 + n.x * .09) > .85 ? 1 : 0;
+  g.drawImage(im, sx - Math.round(im.width / 2), sy - h + 1 + breath);
+  if (scene === 'world' && !screens.length && !scriptRunning && promptTarget !== n) {
     if (n.kind === 'side' && !sideDone(n.sid)) bubble(g, sx, sy - h - 1, '?');
     else if (n.id === G.done) bubble(g, sx, sy - h - 1, '!');
   }
@@ -318,7 +526,7 @@ function drawGlitchWall(g, sx, sy, h) {
     }
   }
   g.globalCompositeOperation = 'source-over';
-  if (hash2(Math.floor(t * 12), 1, sx | 0) > .8) { const yy = sy + hash2(Math.floor(t * 12), 2, 3) * h, hh = 3 + hash2(Math.floor(t * 12), 3, 4) * 8; g.drawImage(cv, Math.max(0, sx - 30), yy, 76, hh, Math.max(0, sx - 30) + (hash2(Math.floor(t * 12), 5, 6) * 10 - 5), yy, 76, hh); }
+  if (hash2(Math.floor(t * 12), 1, sx | 0) > .8) { const yy = sy + hash2(Math.floor(t * 12), 2, 3) * h, hh = 3 + hash2(Math.floor(t * 12), 3, 4) * 8; g.drawImage(g.canvas, Math.max(0, sx - 30), yy, 76, hh, Math.max(0, sx - 30) + (hash2(Math.floor(t * 12), 5, 6) * 10 - 5), yy, 76, hh); }
   g.fillStyle = '#ff2fa0'; g.fillRect(sx - 2, sy, 1, h); g.fillStyle = '#22e6d0'; g.fillRect(sx + 17, sy, 1, h);
 }
 
@@ -369,11 +577,16 @@ let promptTarget = null;
 function drawPrompt(g) {
   const t = interactTarget(); promptTarget = t && t.n; if (!t) return;
   const ix = Math.round(cam.x), iy = Math.round(cam.y);
-  let x, y;
-  if (t.type === 'npc') { x = t.n.x - ix; y = t.n.y - iy - (t.n.boss ? 64 : t.n.who === 'door' ? 86 : 36); }
+  let x, y, feet;
+  if (t.type === 'npc') { x = t.n.x - ix; y = t.n.y - iy - (t.n.boss ? 64 : t.n.who === 'door' ? 86 : CHAR[t.n.who] ? (CHAR[t.n.who].short ? 42 : 46) : 36); }
+  else if (t.type === 'ambient') { const p = ambientPosition(t.a); x = p.x - ix; feet = p.y - iy; y = feet - t.a.height; if (ambientFeedback?.a === t.a && ambientFeedback.life > 0) return; }
   else { x = t.o.x - ix; y = t.o.y - iy - 26; }
-  const key = Input.device === 'touch' || TOUCH ? 'A' : '空格', label = t.type === 'sign' ? '看看' : t.n.boss && bossAlive(t.n) ? '挑战' : t.n.who === 'door' ? '打开' : '说话';
-  const w = textW(key) + textW(label) + 18, bx = Math.round(x - w / 2), by = Math.round(y - 18 + Math.sin(worldT * 4));
+  const key = Input.device === 'touch' || TOUCH ? 'A' : '空格', label = t.type === 'ambient' ? t.a.label : t.type === 'sign' ? (t.o.interact.type === 'interior' ? '进屋' : '看看') : t.n.boss && bossAlive(t.n) ? '挑战' : t.n.who === 'door' ? '打开' : '说话';
+  const w = textW(key) + textW(label) + 18, bx = Math.round(clamp(x - w / 2, 3, VW - w - 3)), by = Math.round(Math.max(27, y - 18 + Math.sin(worldT * 4)));
+  // 选中目标的脚底四角提示，避免近处有多个村民时不知道在和谁说话。
+  const tx = Math.round(x), ty = Math.round(feet ?? ((t.type === 'npc' ? t.n.y : t.o.y) - iy));
+  g.fillStyle = '#f3d294';
+  [[-10, -3, 1], [7, -3, -1], [-10, 2, -1], [7, 2, 1]].forEach(([dx, dy, up]) => { g.fillRect(tx + dx, ty + dy, 4, 1); g.fillRect(tx + dx + (dx < 0 ? 0 : 3), ty + dy - up * 2, 1, 3); });
   win(g, bx, by, w, 17, 'dlg');
   g.fillStyle = UIC.gold; g.fillRect(bx + 4, by + 3, textW(key) + 6, 11); txt(g, key, bx + 7, by + 3, '#2a1e10', { shadow: null });
   txt(g, label, bx + textW(key) + 14, by + 3, UIC.text);
