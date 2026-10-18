@@ -10,4 +10,3 @@ artifacts/
 dist/
 output/
 .playwright-cli/
-
